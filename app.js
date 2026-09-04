@@ -1,5 +1,5 @@
 (() => {
-  const { gps, game, distances, difficulties, map: mapSettings } = window.RUNAWAY_SETTINGS;
+  const { gps, game, distances, chasers: chaserSettings, difficulties, map: mapSettings } = window.RUNAWAY_SETTINGS;
   const safetyDialog = document.querySelector('#safety-dialog');
   const safetyCheck = document.querySelector('#safety-check');
   const safetyConfirm = document.querySelector('#safety-confirm');
@@ -107,8 +107,16 @@
     const speed = activeDifficulty().speedKmh * (1 + state.speedTier * .1);
     state.chaserList = state.chaserList.map((chaser) => {
       if (chaser.activatesAt > Date.now()) return chaser;
-      const remaining = haversine(chaser, state.runner); const moved = Math.min(remaining, speed * 1000 / 3600 * seconds);
-      return { ...chaser, ...destination(chaser, headingTo(chaser, state.runner), moved) };
+      const now = Date.now(); const remaining = haversine(chaser, state.runner);
+      let next = chaser;
+      if (remaining <= distances.spottedMeters && now >= (chaser.cooldownEndsAt || 0)) {
+        next = { ...chaser, boostEndsAt: now + chaserSettings.boostDurationSeconds * 1000, cooldownEndsAt: now + (chaserSettings.boostDurationSeconds + chaserSettings.boostCooldownSeconds) * 1000 };
+        vibrate([80, 50, 80, 50, 180]);
+      }
+      const boosted = now < (next.boostEndsAt || 0);
+      const actualSpeed = Math.min(chaserSettings.maxSpeedKmh, speed * (boosted ? chaserSettings.boostMultiplier : 1));
+      const moved = Math.min(remaining, actualSpeed * 1000 / 3600 * seconds);
+      return { ...next, ...destination(next, headingTo(next, state.runner), moved) };
     });
     updateChaserMarkers();
   };
