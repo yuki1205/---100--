@@ -98,7 +98,7 @@
     if (state.phase === 'grace') {
       const left = Math.max(0, game.normalGraceSeconds - Math.floor((now - state.phaseStartedAt) / 1000));
       setPhase('RUN!', `チェイサー追跡開始まで ${left}秒`);
-      if (!left) { state.phase = 'chase'; state.lastTickAt = now; setPhase('CHASE START', 'チェイサーが追跡を開始しました'); vibrate([120, 80, 120]); }
+      if (!left) { state.phase = 'chase'; state.lastTickAt = now; byId('ready-panel').classList.add('is-hidden'); vibrate([120, 80, 120]); }
       return;
     }
     if (state.phase !== 'chase' || !state.runner || !state.chaser) return;
