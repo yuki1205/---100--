@@ -8,7 +8,7 @@
     <link rel="manifest" href="manifest.json" />
     <link rel="icon" href="assets/icon.svg" type="image/svg+xml" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="" />
-    <link rel="stylesheet" href="style.css?v=27" />
+    <link rel="stylesheet" href="style.css?v=28" />
     <title>ランナウェイ - GPS逃走ゲーム</title>
   </head>
   <body>
@@ -30,6 +30,7 @@
             <button class="primary-button" id="solo-button" type="button">1人で遊ぶ <span>SOLO</span></button>
             <button class="disabled-button" type="button" disabled>複数人で遊ぶ <span>COMING SOON</span></button>
             <button class="text-button" id="history-button" type="button">逃走記録</button>
+            <button class="legal-button" id="info-button" type="button">安全・データについて</button>
           </div>
         </div>
         <div class="ad-slot" aria-label="広告枠">ADVERTISEMENT</div>
@@ -118,6 +119,18 @@
         <header class="plain-header"><button class="back-button" data-back="home" type="button" aria-label="戻る">←</button><h2>逃走記録</h2><button id="clear-history-button" class="header-action" type="button">消去</button></header>
         <div id="history-list" class="history-list"></div>
       </section>
+
+      <section class="screen info-screen is-hidden" data-screen="info">
+        <header class="plain-header"><button class="back-button" data-back="home" type="button" aria-label="戻る">←</button><h2>安全・データについて</h2></header>
+        <div class="info-content">
+          <h3>安全に遊ぶために</h3>
+          <p>走行中は画面を見ず、周囲と交通ルールを最優先してください。私有地や立入禁止区域には入らず、安全な場所でプレイしてください。</p>
+          <h3>位置情報</h3>
+          <p>位置情報は、ゲーム内のRUNNERとCHASERの動き、走行距離の計測に使います。RUNAWAYのサーバーには保存・送信しません。地図表示にはOpenStreetMapを利用します。</p>
+          <h3>逃走記録</h3>
+          <p>スコアと逃走記録は、この端末のブラウザ内に保存されます。逃走記録画面の「消去」から、いつでも削除できます。</p>
+        </div>
+      </section>
     </main>
 
     <dialog id="safety-dialog">
@@ -136,7 +149,7 @@
     </dialog>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
-    <script src="settings.js?v=27"></script>
-    <script src="app.js?v=27"></script>
+    <script src="settings.js?v=28"></script>
+    <script src="app.js?v=28"></script>
   </body>
 </html>

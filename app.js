@@ -250,6 +250,7 @@
     }
   });
   byId('history-button').addEventListener('click', () => showScreen('history'));
+  byId('info-button').addEventListener('click', () => showScreen('info'));
   byId('clear-history-button').addEventListener('click', () => {
     if (!getHistory().length || !confirm('逃走記録をすべて消去しますか？')) return;
     localStorage.removeItem(historyKey);
