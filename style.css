@@ -25,4 +25,5 @@ dialog { width: min(calc(100% - 32px), 440px); border: 1px solid var(--line); bo
 @media (min-width: 720px) { .home-characters { top: 0; right: 5%; width: min(52vw, 650px); }.home-content { padding-top: 60px; } }
 .home-content .eyebrow, .home-content .jp-title, .home-content .tagline { -webkit-text-stroke: 1px #03090f; paint-order: stroke fill; text-shadow: 0 2px 3px #03090f, 0 0 14px #03090f; }.home-content .eyebrow { color: #60c4ff; }.home-content .best-stats { background: rgba(3, 9, 15, .72); }.home-content .best-stats span, .home-content .best-stats strong { text-shadow: 0 1px 2px #03090f; }
 .home-characters { top: -16px; }
+.home-actions .text-button { min-height: 52px; border: 1px solid #42657d; border-radius: 6px; background: rgba(5, 16, 25, .82); padding: 10px 16px; color: var(--text); font-weight: 800; text-align: left; text-decoration: none; }
 @media (min-width: 720px) { .home-characters { top: 0; } }
