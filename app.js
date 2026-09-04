@@ -31,7 +31,11 @@
     document.querySelectorAll('[data-screen]').forEach((screen) => screen.classList.toggle('is-hidden', screen.dataset.screen !== name));
     if (name === 'game' && state.map) setTimeout(() => state.map.invalidateSize(), 0);
   };
-  const setGpsStatus = (status, detail = '') => { byId('gps-status').textContent = status; byId('accuracy-reading').textContent = detail; };
+  const setGpsStatus = (status, detail = '') => {
+    byId('gps-status').textContent = status;
+    byId('accuracy-reading').textContent = detail;
+    byId('gps-status-panel').classList.toggle('is-hidden', status === '位置情報を取得中');
+  };
   const setPhase = (title, detail, canStart = false) => { byId('phase-title').textContent = title; byId('phase-detail').textContent = detail; byId('start-game-button').disabled = !canStart; };
 
   const createMap = (lat, lng) => {
