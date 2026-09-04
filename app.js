@@ -53,6 +53,15 @@
     state.chaser = destination(state.runner, Math.random() * 360, distances.initialSpawnMinMeters + Math.random() * range);
     updateChaserMarker();
   };
+  const framePlayers = () => {
+    if (!state.map || !state.runner || !state.chaser) return;
+    state.map.fitBounds([[state.runner.lat, state.runner.lng], [state.chaser.lat, state.chaser.lng]], {
+      paddingTopLeft: [24, 130],
+      paddingBottomRight: [24, 230],
+      maxZoom: 16,
+      animate: true,
+    });
+  };
   const resetGame = () => {
     clearInterval(state.timerId);
     state.phase = 'ready'; state.chaser = null; state.previousPosition = null; state.distanceMeters = 0; state.startedAt = null; state.phaseStartedAt = null; state.lastTickAt = null; state.caughtSince = null; state.lastAlert = null;
@@ -113,9 +122,11 @@
       const moved = haversine(state.previousPosition, next); const seconds = Math.max(.1, (next.timestamp - state.previousPosition.timestamp) / 1000);
       if (next.accuracy <= gps.poorAccuracyMeters && moved / seconds * 3.6 <= gps.maxPlausibleSpeedKmh) state.distanceMeters += moved;
     }
-    state.runner = next; state.previousPosition = next; state.map.setView(point, Math.max(state.map.getZoom(), mapSettings.initialZoom), { animate: true });
+    state.runner = next; state.previousPosition = next;
+    if (state.chaser) framePlayers();
+    else state.map.setView(point, Math.max(state.map.getZoom(), mapSettings.initialZoom), { animate: true });
     byId('location-reading').textContent = '現在地を取得しました'; setGpsStatus(accuracy > gps.poorAccuracyMeters ? 'GPS精度低下中' : '位置情報を取得中', `GPS精度: 約${Math.round(accuracy)}m`); byId('distance-reading').textContent = formatDistance(state.distanceMeters);
-    if (state.phase === 'ready') { spawnChaser(); setPhase('READY', '10分間、チェイサーから逃げ切れ。安全を確認して開始してください。', true); byId('nearest-reading').textContent = formatDistance(haversine(state.runner, state.chaser)); }
+    if (state.phase === 'ready') { spawnChaser(); framePlayers(); setPhase('READY', '10分間、チェイサーから逃げ切れ。安全を確認して開始してください。', true); byId('nearest-reading').textContent = formatDistance(haversine(state.runner, state.chaser)); }
   };
   const startLocation = () => {
     if (!navigator.geolocation) return setGpsStatus('このブラウザはGPSに対応していません', 'Safari または Chrome で開いてください');
