@@ -109,7 +109,7 @@
       if (chaser.activatesAt > Date.now()) return chaser;
       const now = Date.now(); const remaining = haversine(chaser, state.runner);
       let next = chaser;
-      if (remaining <= distances.spottedMeters && now >= (chaser.cooldownEndsAt || 0)) {
+      if (activeDifficulty().dashEnabled !== false && remaining <= distances.spottedMeters && now >= (chaser.cooldownEndsAt || 0)) {
         next = { ...chaser, boostEndsAt: now + chaserSettings.boostDurationSeconds * 1000, cooldownEndsAt: now + (chaserSettings.boostDurationSeconds + chaserSettings.boostCooldownSeconds) * 1000 };
         vibrate([80, 50, 80, 50, 180]);
       }
@@ -128,9 +128,9 @@
     if (state.goalType === 'distance' && state.distanceMeters >= state.goalValue) return finishGame('escaped');
     const progress = state.goalType === 'time' ? elapsed / state.goalValue : state.distanceMeters / state.goalValue;
     const speedTier = progress >= .9 ? 3 : progress >= .75 ? 2 : progress >= .5 ? 1 : 0;
-    if (speedTier > state.speedTier) { state.speedTier = speedTier; vibrate(speedTier === 3 ? [120, 70, 120, 70, 240] : [100, 80, 100]); }
+    if (activeDifficulty().speedUpEnabled !== false && speedTier > state.speedTier) { state.speedTier = speedTier; vibrate(speedTier === 3 ? [120, 70, 120, 70, 240] : [100, 80, 100]); }
     [0.25, 0.65, 0.85].forEach((threshold) => {
-      if (progress >= threshold && !state.addedEvents.includes(threshold) && state.chaserList.length < 5) {
+      if (activeDifficulty().addChaserEnabled !== false && progress >= threshold && !state.addedEvents.includes(threshold) && state.chaserList.length < 5) {
         state.addedEvents.push(threshold);
         const distance = 300 + Math.random() * 300;
         state.chaserList.push({ ...destination(state.runner, Math.random() * 360, distance), activatesAt: now + 15000 });
@@ -194,7 +194,7 @@
   byId('custom-button').addEventListener('click', () => showScreen('custom'));
   const syncCustom = () => { byId('custom-count-output').textContent = `${byId('custom-count').value}体`; byId('custom-grace-output').textContent = `${byId('custom-grace').value}秒`; };
   byId('custom-count').addEventListener('input', syncCustom); byId('custom-grace').addEventListener('input', syncCustom);
-  byId('custom-next-button').addEventListener('click', () => { state.custom = { label: 'CUSTOM', initialChaserCount: Number(byId('custom-count').value), graceSeconds: Number(byId('custom-grace').value), speedKmh: Number(byId('custom-speed').value) }; state.goalType = 'time'; state.goalValue = 600; showScreen('goal'); });
+  byId('custom-next-button').addEventListener('click', () => { state.custom = { label: 'CUSTOM', initialChaserCount: Number(byId('custom-count').value), graceSeconds: Number(byId('custom-grace').value), speedKmh: Number(byId('custom-speed').value), addChaserEnabled: byId('custom-add').checked, speedUpEnabled: byId('custom-speedup').checked, dashEnabled: byId('custom-dash').checked }; state.goalType = 'time'; state.goalValue = 600; showScreen('goal'); });
   document.querySelectorAll('[data-goal-type]').forEach((button) => button.addEventListener('click', () => { state.goalType = button.dataset.goalType; state.goalValue = Number(button.dataset.goalValue); safetyDialog.showModal(); }));
   safetyCheck.addEventListener('change', () => { safetyConfirm.disabled = !safetyCheck.checked; });
   safetyDialog.addEventListener('close', () => { if (safetyDialog.returnValue === 'confirm' && safetyCheck.checked) openGame(); });

@@ -8,7 +8,7 @@
     <link rel="manifest" href="manifest.json" />
     <link rel="icon" href="assets/icon.svg" type="image/svg+xml" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="" />
-    <link rel="stylesheet" href="style.css?v=20" />
+    <link rel="stylesheet" href="style.css?v=21" />
     <title>ランナウェイ - GPS逃走ゲーム</title>
   </head>
   <body>
@@ -53,6 +53,9 @@
           <label>初期チェイサー数 <output id="custom-count-output">1体</output><input id="custom-count" type="range" min="1" max="5" value="1" /></label>
           <label>逃走猶予 <output id="custom-grace-output">60秒</output><input id="custom-grace" type="range" min="5" max="90" step="5" value="60" /></label>
           <label>チェイサーの速さ<select id="custom-speed"><option value="8">ふつう</option><option value="10" selected>速い</option><option value="12">超速い</option></select></label>
+          <label class="toggle-label"><input id="custom-add" type="checkbox" checked /> チェイサー追加</label>
+          <label class="toggle-label"><input id="custom-speedup" type="checkbox" checked /> SPEED UP</label>
+          <label class="toggle-label"><input id="custom-dash" type="checkbox" checked /> 視界内ダッシュ</label>
           <button id="custom-next-button" class="primary-button" type="button">目標を選ぶ</button>
         </div>
       </section>
@@ -129,7 +132,7 @@
     </dialog>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
-    <script src="settings.js?v=20"></script>
-    <script src="app.js?v=20"></script>
+    <script src="settings.js?v=21"></script>
+    <script src="app.js?v=21"></script>
   </body>
 </html>
