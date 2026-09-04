@@ -8,6 +8,12 @@ window.RUNAWAY_SETTINGS = {
     poorAccuracyMeters: 50,
     maxPlausibleSpeedKmh: 35,
   },
+  game: {
+    prototypeTargetSeconds: 10 * 60,
+    normalGraceSeconds: 60,
+    countdownSeconds: 3,
+    caughtHoldSeconds: 3,
+  },
   distances: {
     catchMeters: 20,
     spottedMeters: 50,
@@ -16,5 +22,12 @@ window.RUNAWAY_SETTINGS = {
     initialSpawnMinMeters: 500,
     initialSpawnMaxMeters: 800,
   },
-  chasers: { maxCount: 5, boostMultiplier: 2, boostDurationSeconds: 10, boostCooldownSeconds: 20 },
+  chasers: {
+    maxCount: 5,
+    normalSpeedKmh: 10,
+    maxSpeedKmh: 25,
+    boostMultiplier: 2,
+    boostDurationSeconds: 10,
+    boostCooldownSeconds: 20,
+  },
 };

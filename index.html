@@ -44,9 +44,27 @@
           <button class="icon-button" id="end-button" type="button" aria-label="ホームへ戻る" title="ホームへ戻る">×</button>
         </header>
         <section class="location-panel" aria-live="polite">
-          <div class="runner-label"><i></i> RUNNER</div>
+          <div class="game-row"><div class="runner-label"><i></i> RUNNER</div><div class="runner-label chaser-label"><i></i> CHASER</div></div>
           <strong id="location-reading">GPSを取得しています</strong>
           <span id="accuracy-reading">屋外の開けた場所でお待ちください</span>
+          <div class="game-stats">
+            <div><span>TIME</span><strong id="time-reading">10:00</strong></div>
+            <div><span>DISTANCE</span><strong id="distance-reading">0 m</strong></div>
+            <div><span>NEAREST</span><strong id="nearest-reading">-- m</strong></div>
+          </div>
+        </section>
+        <section id="ready-panel" class="ready-panel" aria-live="polite">
+          <p class="eyebrow">NORMAL / TIME ESCAPE</p>
+          <h2 id="phase-title">GPSを取得しています</h2>
+          <p id="phase-detail">屋外の開けた場所でお待ちください</p>
+          <button id="start-game-button" class="primary-button" type="button" disabled>逃走を開始</button>
+        </section>
+        <section id="result-panel" class="result-panel is-hidden" aria-live="assertive">
+          <p id="result-label" class="eyebrow">RESULT</p>
+          <h2 id="result-title">ESCAPED!</h2>
+          <p id="result-detail"></p>
+          <div class="result-stats"><span>TIME <strong id="result-time">--:--</strong></span><span>DISTANCE <strong id="result-distance">-- m</strong></span></div>
+          <button id="result-home-button" class="primary-button" type="button">HOMEへ戻る</button>
         </section>
         <div class="game-note">プレイ中は画面を見続けず、周囲の安全を最優先してください。</div>
       </section>
@@ -68,7 +86,7 @@
           <li>安全な場所でプレイする</li>
         </ul>
         <label class="check-label"><input id="safety-check" type="checkbox" /> 内容を確認しました</label>
-        <button id="safety-confirm" class="primary-button" value="confirm" type="submit" disabled>はじめる</button>
+        <button id="safety-confirm" class="primary-button" value="confirm" type="submit" disabled>準備へ進む</button>
       </form>
     </dialog>
 
