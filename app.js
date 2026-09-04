@@ -3,7 +3,7 @@
   const safetyDialog = document.querySelector('#safety-dialog');
   const safetyCheck = document.querySelector('#safety-check');
   const safetyConfirm = document.querySelector('#safety-confirm');
-  const state = { map: null, runnerMarker: null, accuracyCircle: null, watchId: null, runner: null, previousPosition: null, chaserList: [], difficulty: 'normal', custom: null, goalType: 'time', goalValue: 600, phase: 'idle', distanceMeters: 0, startedAt: null, phaseStartedAt: null, lastTickAt: null, caughtSince: null, lastAlert: null, speedTier: 0, addedEvents: [], timerId: null, result: null };
+  const state = { map: null, runnerMarker: null, accuracyCircle: null, watchId: null, runner: null, previousPosition: null, chaserList: [], difficulty: 'normal', custom: null, goalType: 'time', goalValue: 600, phase: 'idle', distanceMeters: 0, startedAt: null, phaseStartedAt: null, lastTickAt: null, caughtSince: null, lastAlert: null, speedTier: 0, addedEvents: [], timerId: null, result: null, wakeLock: null };
 
   const byId = (id) => document.querySelector(`#${id}`);
   const formatDistance = (meters) => meters < 1000 ? `${Math.round(meters)} m` : `${(meters / 1000).toFixed(2)} km`;
@@ -27,6 +27,18 @@
     return { lat: nextLat * 180 / Math.PI, lng: nextLng * 180 / Math.PI };
   };
   const vibrate = (pattern) => { if (navigator.vibrate) navigator.vibrate(pattern); };
+  const keepScreenAwake = async () => {
+    if (!('wakeLock' in navigator) || state.wakeLock || document.visibilityState !== 'visible') return;
+    try {
+      state.wakeLock = await navigator.wakeLock.request('screen');
+      state.wakeLock.addEventListener('release', () => { state.wakeLock = null; });
+    } catch (_) { /* Screen Wake Lock is optional. */ }
+  };
+  const releaseScreenWakeLock = async () => {
+    if (!state.wakeLock) return;
+    try { await state.wakeLock.release(); } catch (_) { /* Already released by the browser. */ }
+    state.wakeLock = null;
+  };
   const showScreen = (name) => {
     document.querySelectorAll('[data-screen]').forEach((screen) => screen.classList.toggle('is-hidden', screen.dataset.screen !== name));
     if (name === 'game' && state.map) setTimeout(() => state.map.invalidateSize(), 0);
@@ -88,7 +100,7 @@
   };
   const finishGame = (outcome) => {
     if (state.phase === 'ended') return;
-    clearInterval(state.timerId); state.phase = 'ended'; byId('ready-panel').classList.add('is-hidden'); byId('result-panel').classList.remove('is-hidden');
+    clearInterval(state.timerId); state.phase = 'ended'; void releaseScreenWakeLock(); byId('ready-panel').classList.add('is-hidden'); byId('result-panel').classList.remove('is-hidden');
     const elapsed = state.startedAt ? Math.floor((Date.now() - state.startedAt) / 1000) : 0;
     byId('result-label').textContent = outcome === 'escaped' ? 'ミッション完了' : outcome === 'caught' ? 'チェイス終了' : '逃走終了';
     byId('result-title').textContent = outcome === 'escaped' ? 'ESCAPED!' : outcome === 'caught' ? 'CAUGHT' : 'RETIRED';
@@ -189,7 +201,7 @@
   const showSafetyDialog = () => { safetyCheck.checked = false; safetyConfirm.disabled = true; safetyDialog.showModal(); };
   const startGame = () => {
     if (!state.runner || state.phase !== 'ready') return;
-    state.phase = 'countdown'; state.startedAt = Date.now(); state.phaseStartedAt = state.startedAt; byId('start-game-button').disabled = true; state.timerId = setInterval(gameTick, 250); gameTick();
+    state.phase = 'countdown'; void keepScreenAwake(); state.startedAt = Date.now(); state.phaseStartedAt = state.startedAt; byId('start-game-button').disabled = true; state.timerId = setInterval(gameTick, 250); gameTick();
   };
 
   byId('solo-button').addEventListener('click', () => showScreen('solo'));
@@ -202,9 +214,9 @@
   safetyCheck.addEventListener('change', () => { safetyConfirm.disabled = !safetyCheck.checked; });
   safetyDialog.addEventListener('close', () => { if (safetyDialog.returnValue === 'confirm' && safetyCheck.checked) openGame(); });
   byId('start-game-button').addEventListener('click', startGame);
-  byId('end-button').addEventListener('click', () => { if (['countdown', 'grace', 'chase'].includes(state.phase)) { if (confirm('逃走を終了しますか？')) finishGame('retired'); return; } stopLocation(); showScreen('home'); });
-  byId('play-again-button').addEventListener('click', () => { stopLocation(); showSafetyDialog(); });
-  byId('result-home-button').addEventListener('click', () => { stopLocation(); showScreen('home'); });
+  byId('end-button').addEventListener('click', () => { if (['countdown', 'grace', 'chase'].includes(state.phase)) { if (confirm('逃走を終了しますか？')) finishGame('retired'); return; } stopLocation(); void releaseScreenWakeLock(); showScreen('home'); });
+  byId('play-again-button').addEventListener('click', () => { stopLocation(); void releaseScreenWakeLock(); showSafetyDialog(); });
+  byId('result-home-button').addEventListener('click', () => { stopLocation(); void releaseScreenWakeLock(); showScreen('home'); });
   byId('share-result-button').addEventListener('click', async () => {
     if (!state.result) return;
     const outcome = state.result.outcome === 'escaped' ? '逃走成功' : state.result.outcome === 'caught' ? '確保' : 'リタイア';
@@ -226,6 +238,9 @@
   });
   byId('history-button').addEventListener('click', () => showScreen('history'));
   document.querySelectorAll('[data-back]').forEach((button) => button.addEventListener('click', () => showScreen(button.dataset.back)));
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible' && ['countdown', 'grace', 'chase'].includes(state.phase)) void keepScreenAwake();
+  });
   if ('serviceWorker' in navigator) addEventListener('load', () => navigator.serviceWorker.register('./service-worker.js'));
   renderHistory();
 })();
