@@ -3,7 +3,7 @@
   const safetyDialog = document.querySelector('#safety-dialog');
   const safetyCheck = document.querySelector('#safety-check');
   const safetyConfirm = document.querySelector('#safety-confirm');
-  const state = { map: null, runnerMarker: null, accuracyCircle: null, watchId: null, runner: null, previousPosition: null, chaserList: [], difficulty: 'normal', custom: null, goalType: 'time', goalValue: 600, phase: 'idle', distanceMeters: 0, startedAt: null, phaseStartedAt: null, lastTickAt: null, caughtSince: null, lastAlert: null, speedTier: 0, addedEvents: [], timerId: null };
+  const state = { map: null, runnerMarker: null, accuracyCircle: null, watchId: null, runner: null, previousPosition: null, chaserList: [], difficulty: 'normal', custom: null, goalType: 'time', goalValue: 600, phase: 'idle', distanceMeters: 0, startedAt: null, phaseStartedAt: null, lastTickAt: null, caughtSince: null, lastAlert: null, speedTier: 0, addedEvents: [], timerId: null, result: null };
 
   const byId = (id) => document.querySelector(`#${id}`);
   const formatDistance = (meters) => meters < 1000 ? `${Math.round(meters)} m` : `${(meters / 1000).toFixed(2)} km`;
@@ -80,7 +80,8 @@
   };
   const resetGame = () => {
     clearInterval(state.timerId);
-    state.phase = 'ready'; state.chaserList.forEach((chaser) => chaser.marker && state.map?.removeLayer(chaser.marker)); state.chaserList = []; state.previousPosition = null; state.distanceMeters = 0; state.startedAt = null; state.phaseStartedAt = null; state.lastTickAt = null; state.caughtSince = null; state.lastAlert = null; state.speedTier = 0; state.addedEvents = [];
+    state.phase = 'ready'; state.chaserList.forEach((chaser) => chaser.marker && state.map?.removeLayer(chaser.marker)); state.chaserList = []; state.previousPosition = null; state.distanceMeters = 0; state.startedAt = null; state.phaseStartedAt = null; state.lastTickAt = null; state.caughtSince = null; state.lastAlert = null; state.speedTier = 0; state.addedEvents = []; state.result = null;
+    byId('share-status').textContent = '';
     byId('result-panel').classList.add('is-hidden'); byId('ready-panel').classList.remove('is-hidden');
     byId('primary-label').textContent = state.goalType === 'time' ? '残り時間' : '経過時間';
     byId('time-reading').textContent = state.goalType === 'time' ? formatTime(state.goalValue) : '00:00'; byId('distance-reading').textContent = '0 m'; byId('nearest-reading').textContent = '-- m';
@@ -89,12 +90,13 @@
     if (state.phase === 'ended') return;
     clearInterval(state.timerId); state.phase = 'ended'; byId('ready-panel').classList.add('is-hidden'); byId('result-panel').classList.remove('is-hidden');
     const elapsed = state.startedAt ? Math.floor((Date.now() - state.startedAt) / 1000) : 0;
-    byId('result-label').textContent = outcome === 'escaped' ? 'MISSION COMPLETE' : outcome === 'caught' ? 'CHASE ENDED' : 'RUN ENDED';
+    byId('result-label').textContent = outcome === 'escaped' ? 'ミッション完了' : outcome === 'caught' ? 'チェイス終了' : '逃走終了';
     byId('result-title').textContent = outcome === 'escaped' ? 'ESCAPED!' : outcome === 'caught' ? 'CAUGHT' : 'RETIRED';
     byId('result-detail').textContent = outcome === 'escaped' ? '逃走成功' : outcome === 'caught' ? '確保されました' : '逃走を終了しました';
     byId('result-time').textContent = formatTime(elapsed); byId('result-distance').textContent = formatDistance(state.distanceMeters);
     const difficulty = activeDifficulty();
     const score = Math.round(state.distanceMeters * 5 + elapsed * 3 + difficulty.initialChaserCount * 500 + (outcome === 'escaped' ? 2000 : 0));
+    state.result = { outcome, elapsed, distance: Math.round(state.distanceMeters), score };
     byId('result-score').textContent = `${score.toLocaleString()} pt`;
     const records = getHistory();
     records.unshift({ outcome: outcome.toUpperCase(), elapsed, distance: Math.round(state.distanceMeters), score, at: Date.now() });
@@ -201,6 +203,25 @@
   byId('start-game-button').addEventListener('click', startGame);
   byId('end-button').addEventListener('click', () => { if (['countdown', 'grace', 'chase'].includes(state.phase)) { if (confirm('逃走を終了しますか？')) finishGame('retired'); return; } stopLocation(); showScreen('home'); });
   byId('result-home-button').addEventListener('click', () => { stopLocation(); showScreen('home'); });
+  byId('share-result-button').addEventListener('click', async () => {
+    if (!state.result) return;
+    const outcome = state.result.outcome === 'escaped' ? '逃走成功' : state.result.outcome === 'caught' ? '確保' : 'リタイア';
+    const text = `RUNAWAY ${outcome}\nスコア: ${state.result.score.toLocaleString()} pt\n時間: ${formatTime(state.result.elapsed)}\n走行距離: ${formatDistance(state.result.distance)}\n#ランナウェイ #RUNAWAY`;
+    const status = byId('share-status');
+    try {
+      if (navigator.share) {
+        await navigator.share({ title: 'RUNAWAY 逃走記録', text });
+        status.textContent = '共有しました';
+      } else if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(text);
+        status.textContent = '記録をコピーしました';
+      } else {
+        status.textContent = 'この端末では共有できません';
+      }
+    } catch (error) {
+      if (error.name !== 'AbortError') status.textContent = '共有できませんでした';
+    }
+  });
   byId('history-button').addEventListener('click', () => showScreen('history'));
   document.querySelectorAll('[data-back]').forEach((button) => button.addEventListener('click', () => showScreen(button.dataset.back)));
   if ('serviceWorker' in navigator) addEventListener('load', () => navigator.serviceWorker.register('./service-worker.js'));
