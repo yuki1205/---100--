@@ -111,7 +111,7 @@
   };
   const finishGame = (outcome) => {
     if (state.phase === 'ended') return;
-    clearInterval(state.timerId); state.phase = 'ended'; void releaseScreenWakeLock(); byId('ready-panel').classList.add('is-hidden'); byId('result-panel').classList.remove('is-hidden');
+    clearInterval(state.timerId); state.phase = 'ended'; stopLocation(); void releaseScreenWakeLock(); byId('ready-panel').classList.add('is-hidden'); byId('result-panel').classList.remove('is-hidden');
     const elapsed = state.startedAt ? Math.floor((Date.now() - state.startedAt) / 1000) : 0;
     byId('result-label').textContent = outcome === 'escaped' ? 'ミッション完了' : outcome === 'caught' ? 'チェイス終了' : '逃走終了';
     byId('result-title').textContent = outcome === 'escaped' ? 'ESCAPED!' : outcome === 'caught' ? 'CAUGHT' : 'RETIRED';
