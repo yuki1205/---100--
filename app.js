@@ -188,8 +188,22 @@
     updateChaserMarkers();
   };
   const gameTick = () => {
-    if (!state.startedAt || state.phase === 'ended') return;
-    const now = Date.now(); const elapsed = Math.floor((now - state.startedAt) / 1000);
+    if (state.phase === 'ended') return;
+    const now = Date.now();
+    if (state.phase === 'countdown') {
+      const left = Math.max(0, game.countdownSeconds - Math.floor((now - state.phaseStartedAt) / 1000));
+      setPhase(left ? String(left) : 'RUN!', '安全を確認して逃走してください');
+      if (!left) { state.phase = 'grace'; state.phaseStartedAt = now; vibrate(100); }
+      return;
+    }
+    if (state.phase === 'grace') {
+      const left = Math.max(0, activeDifficulty().graceSeconds - Math.floor((now - state.phaseStartedAt) / 1000));
+      setPhase('RUN!', `チェイサー追跡開始まで ${left}秒`);
+      if (!left) { state.phase = 'chase'; state.startedAt = now; state.lastTickAt = now; byId('ready-panel').classList.add('is-hidden'); vibrate([120, 80, 120]); }
+      return;
+    }
+    if (state.phase !== 'chase' || !state.runner || !state.chaserList.length) return;
+    const elapsed = Math.floor((now - state.startedAt) / 1000);
     byId('time-reading').textContent = formatTime(state.goalType === 'time' ? Math.max(0, state.goalValue - elapsed) : elapsed);
     if (state.goalType === 'time' && elapsed >= state.goalValue) return finishGame('escaped');
     if (state.goalType === 'distance' && state.distanceMeters >= state.goalValue) return finishGame('escaped');
@@ -205,19 +219,6 @@
         showEvent('新しいチェイサー出現: 15秒後に追跡開始'); vibrate([100, 70, 100]);
       }
     });
-    if (state.phase === 'countdown') {
-      const left = Math.max(0, game.countdownSeconds - Math.floor((now - state.phaseStartedAt) / 1000));
-      setPhase(left ? String(left) : 'RUN!', '安全を確認して逃走してください');
-      if (!left) { state.phase = 'grace'; state.phaseStartedAt = now; vibrate(100); }
-      return;
-    }
-    if (state.phase === 'grace') {
-      const left = Math.max(0, activeDifficulty().graceSeconds - Math.floor((now - state.phaseStartedAt) / 1000));
-      setPhase('RUN!', `チェイサー追跡開始まで ${left}秒`);
-      if (!left) { state.phase = 'chase'; state.lastTickAt = now; byId('ready-panel').classList.add('is-hidden'); vibrate([120, 80, 120]); }
-      return;
-    }
-    if (state.phase !== 'chase' || !state.runner || !state.chaserList.length) return;
     const delta = Math.min(3, Math.max(0, (now - state.lastTickAt) / 1000)); state.lastTickAt = now; moveChaser(delta);
     const activeChasers = state.chaserList.filter((chaser) => isChaserActive(chaser, now));
     if (!activeChasers.length) return;
@@ -258,7 +259,7 @@
   const showSafetyDialog = () => { safetyCheck.checked = false; safetyConfirm.disabled = true; safetyDialog.showModal(); };
   const startGame = () => {
     if (!state.runner || state.phase !== 'ready') return;
-    state.phase = 'countdown'; void prepareAlertAudio(); void keepScreenAwake(); state.startedAt = Date.now(); state.phaseStartedAt = state.startedAt; byId('start-game-button').disabled = true; byId('test-alert-button').disabled = true; state.timerId = setInterval(gameTick, 250); gameTick();
+    state.phase = 'countdown'; void prepareAlertAudio(); void keepScreenAwake(); state.phaseStartedAt = Date.now(); byId('start-game-button').disabled = true; byId('test-alert-button').disabled = true; state.timerId = setInterval(gameTick, 250); gameTick();
   };
 
   byId('solo-button').addEventListener('click', () => showScreen('solo'));
