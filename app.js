@@ -3,7 +3,7 @@
   const safetyDialog = document.querySelector('#safety-dialog');
   const safetyCheck = document.querySelector('#safety-check');
   const safetyConfirm = document.querySelector('#safety-confirm');
-  const state = { map: null, runnerMarker: null, accuracyCircle: null, watchId: null, runner: null, previousPosition: null, chaserList: [], difficulty: 'normal', custom: null, goalType: 'time', goalValue: 600, phase: 'idle', distanceMeters: 0, startedAt: null, phaseStartedAt: null, lastTickAt: null, caughtSince: null, lastAlert: null, speedTier: 0, addedEvents: [], timerId: null, result: null, wakeLock: null, eventTimer: null, audioContext: null, nextAlarmAt: 0 };
+  const state = { map: null, runnerMarker: null, accuracyCircle: null, watchId: null, runner: null, previousPosition: null, chaserList: [], difficulty: 'normal', custom: null, goalType: 'time', goalValue: 600, phase: 'idle', distanceMeters: 0, startedAt: null, phaseStartedAt: null, lastTickAt: null, caughtSince: null, lastAlert: null, speedTier: 0, addedEvents: [], timerId: null, result: null, wakeLock: null, eventTimer: null, speedTimer: null, audioContext: null, nextAlarmAt: 0 };
 
   const byId = (id) => document.querySelector(`#${id}`);
   const formatDistance = (meters) => meters < 1000 ? `${Math.round(meters)} m` : `${(meters / 1000).toFixed(2)} km`;
@@ -79,6 +79,12 @@
     toast.classList.remove('is-hidden');
     state.eventTimer = setTimeout(() => toast.classList.add('is-hidden'), 3000);
   };
+  const flashSpeedUp = () => {
+    const gameScreen = byId('game-screen');
+    clearTimeout(state.speedTimer);
+    gameScreen.classList.add('is-speedup');
+    state.speedTimer = setTimeout(() => gameScreen.classList.remove('is-speedup'), 2200);
+  };
   const showScreen = (name) => {
     document.querySelectorAll('[data-screen]').forEach((screen) => screen.classList.toggle('is-hidden', screen.dataset.screen !== name));
     if (name === 'game' && state.map) setTimeout(() => state.map.invalidateSize(), 0);
@@ -135,7 +141,7 @@
   };
   const resetGame = () => {
     clearInterval(state.timerId);
-    state.phase = 'ready'; state.chaserList.forEach((chaser) => chaser.marker && state.map?.removeLayer(chaser.marker)); state.chaserList = []; state.previousPosition = null; state.distanceMeters = 0; state.startedAt = null; state.phaseStartedAt = null; state.lastTickAt = null; state.caughtSince = null; state.lastAlert = null; state.speedTier = 0; state.addedEvents = []; state.result = null; clearTimeout(state.eventTimer); byId('event-toast').classList.add('is-hidden'); setProximityWarning('');
+    state.phase = 'ready'; state.chaserList.forEach((chaser) => chaser.marker && state.map?.removeLayer(chaser.marker)); state.chaserList = []; state.previousPosition = null; state.distanceMeters = 0; state.startedAt = null; state.phaseStartedAt = null; state.lastTickAt = null; state.caughtSince = null; state.lastAlert = null; state.speedTier = 0; state.addedEvents = []; state.result = null; clearTimeout(state.eventTimer); clearTimeout(state.speedTimer); byId('event-toast').classList.add('is-hidden'); byId('game-screen').classList.remove('is-speedup'); setProximityWarning('');
     byId('share-status').textContent = '';
     byId('result-panel').classList.add('is-hidden'); byId('ready-panel').classList.remove('is-hidden');
     byId('primary-label').textContent = state.goalType === 'time' ? '残り時間' : '経過時間';
@@ -143,7 +149,7 @@
   };
   const finishGame = (outcome) => {
     if (state.phase === 'ended') return;
-    clearInterval(state.timerId); state.phase = 'ended'; stopLocation(); void releaseScreenWakeLock(); setProximityWarning(''); byId('ready-panel').classList.add('is-hidden'); byId('result-panel').classList.remove('is-hidden');
+    clearInterval(state.timerId); state.phase = 'ended'; stopLocation(); void releaseScreenWakeLock(); clearTimeout(state.speedTimer); byId('game-screen').classList.remove('is-speedup'); setProximityWarning(''); byId('ready-panel').classList.add('is-hidden'); byId('result-panel').classList.remove('is-hidden');
     const elapsed = state.startedAt ? Math.floor((Date.now() - state.startedAt) / 1000) : 0;
     byId('result-label').textContent = outcome === 'escaped' ? 'ミッション完了' : outcome === 'caught' ? 'チェイス終了' : '逃走終了';
     byId('result-title').textContent = outcome === 'escaped' ? 'ESCAPED!' : outcome === 'caught' ? 'CAUGHT' : 'RETIRED';
@@ -187,7 +193,7 @@
     if (state.goalType === 'distance' && state.distanceMeters >= state.goalValue) return finishGame('escaped');
     const progress = state.goalType === 'time' ? elapsed / state.goalValue : state.distanceMeters / state.goalValue;
     const speedTier = progress >= .9 ? 3 : progress >= .75 ? 2 : progress >= .5 ? 1 : 0;
-    if (activeDifficulty().speedUpEnabled !== false && speedTier > state.speedTier) { state.speedTier = speedTier; showEvent(`速度アップ: チェイサー速度 +${speedTier * 10}%`); vibrate(speedTier === 3 ? [120, 70, 120, 70, 240] : [100, 80, 100]); }
+    if (activeDifficulty().speedUpEnabled !== false && speedTier > state.speedTier) { const increase = (speedTier - state.speedTier) * 10; state.speedTier = speedTier; flashSpeedUp(); showEvent(`速度アップ: さらに +${increase}%（合計 +${speedTier * 10}%）`); vibrate(speedTier === 3 ? [120, 70, 120, 70, 240] : [100, 80, 100]); }
     [0.25, 0.65, 0.85].forEach((threshold) => {
       if (activeDifficulty().addChaserEnabled !== false && progress >= threshold && !state.addedEvents.includes(threshold) && state.chaserList.length < 5) {
         state.addedEvents.push(threshold);
