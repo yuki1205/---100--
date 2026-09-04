@@ -3,7 +3,7 @@
   const safetyDialog = document.querySelector('#safety-dialog');
   const safetyCheck = document.querySelector('#safety-check');
   const safetyConfirm = document.querySelector('#safety-confirm');
-  const state = { map: null, runnerMarker: null, accuracyCircle: null, chaserMarkers: [], watchId: null, runner: null, previousPosition: null, chaserList: [], difficulty: 'normal', phase: 'idle', distanceMeters: 0, startedAt: null, phaseStartedAt: null, lastTickAt: null, caughtSince: null, lastAlert: null, timerId: null };
+  const state = { map: null, runnerMarker: null, accuracyCircle: null, chaserMarkers: [], watchId: null, runner: null, previousPosition: null, chaserList: [], difficulty: 'normal', goalType: 'time', goalValue: 600, phase: 'idle', distanceMeters: 0, startedAt: null, phaseStartedAt: null, lastTickAt: null, caughtSince: null, lastAlert: null, timerId: null };
 
   const byId = (id) => document.querySelector(`#${id}`);
   const formatDistance = (meters) => meters < 1000 ? `${Math.round(meters)} m` : `${(meters / 1000).toFixed(2)} km`;
@@ -74,12 +74,13 @@
     state.phase = 'ready'; state.chaserList = []; state.previousPosition = null; state.distanceMeters = 0; state.startedAt = null; state.phaseStartedAt = null; state.lastTickAt = null; state.caughtSince = null; state.lastAlert = null;
     state.chaserMarkers.forEach((marker) => state.map?.removeLayer(marker)); state.chaserMarkers = [];
     byId('result-panel').classList.add('is-hidden'); byId('ready-panel').classList.remove('is-hidden');
-    byId('time-reading').textContent = formatTime(game.prototypeTargetSeconds); byId('distance-reading').textContent = '0 m'; byId('nearest-reading').textContent = '-- m';
+    byId('primary-label').textContent = state.goalType === 'time' ? '残り時間' : '経過時間';
+    byId('time-reading').textContent = state.goalType === 'time' ? formatTime(state.goalValue) : '00:00'; byId('distance-reading').textContent = '0 m'; byId('nearest-reading').textContent = '-- m';
   };
   const finishGame = (outcome) => {
     if (state.phase === 'ended') return;
     clearInterval(state.timerId); state.phase = 'ended'; byId('ready-panel').classList.add('is-hidden'); byId('result-panel').classList.remove('is-hidden');
-    const elapsed = state.startedAt ? Math.min(game.prototypeTargetSeconds, Math.floor((Date.now() - state.startedAt) / 1000)) : 0;
+    const elapsed = state.startedAt ? Math.floor((Date.now() - state.startedAt) / 1000) : 0;
     byId('result-label').textContent = outcome === 'escaped' ? 'MISSION COMPLETE' : outcome === 'caught' ? 'CHASE ENDED' : 'RUN ENDED';
     byId('result-title').textContent = outcome === 'escaped' ? 'ESCAPED!' : outcome === 'caught' ? 'CAUGHT' : 'RETIRED';
     byId('result-detail').textContent = outcome === 'escaped' ? '逃走成功' : outcome === 'caught' ? '確保されました' : '逃走を終了しました';
@@ -98,8 +99,9 @@
   const gameTick = () => {
     if (!state.startedAt || state.phase === 'ended') return;
     const now = Date.now(); const elapsed = Math.floor((now - state.startedAt) / 1000);
-    byId('time-reading').textContent = formatTime(Math.max(0, game.prototypeTargetSeconds - elapsed));
-    if (elapsed >= game.prototypeTargetSeconds) return finishGame('escaped');
+    byId('time-reading').textContent = formatTime(state.goalType === 'time' ? Math.max(0, state.goalValue - elapsed) : elapsed);
+    if (state.goalType === 'time' && elapsed >= state.goalValue) return finishGame('escaped');
+    if (state.goalType === 'distance' && state.distanceMeters >= state.goalValue) return finishGame('escaped');
     if (state.phase === 'countdown') {
       const left = Math.max(0, game.countdownSeconds - Math.floor((now - state.phaseStartedAt) / 1000));
       setPhase(left ? String(left) : 'RUN!', '安全を確認して逃走してください');
@@ -137,7 +139,7 @@
     if (state.chaserList.length) framePlayers();
     else state.map.setView(point, Math.max(state.map.getZoom(), mapSettings.initialZoom), { animate: true });
     byId('location-reading').textContent = '現在地を取得しました'; setGpsStatus(accuracy > gps.poorAccuracyMeters ? 'GPS精度低下中' : '位置情報を取得中', `GPS精度: 約${Math.round(accuracy)}m`); byId('distance-reading').textContent = formatDistance(state.distanceMeters);
-    if (state.phase === 'ready') { spawnChaser(); framePlayers(); const difficulty = difficulties[state.difficulty]; setPhase('READY', `${difficulty.label}: ${difficulty.initialChaserCount}体のチェイサーから逃げ切れ。`, true); byId('nearest-reading').textContent = formatDistance(Math.min(...state.chaserList.map((chaser) => haversine(state.runner, chaser)))); }
+    if (state.phase === 'ready') { spawnChaser(); framePlayers(); const difficulty = difficulties[state.difficulty]; const goal = state.goalType === 'time' ? `${state.goalValue / 60}分` : formatDistance(state.goalValue); setPhase('READY', `${goal}、${difficulty.initialChaserCount}体のチェイサーから逃げ切れ。`, true); byId('nearest-reading').textContent = formatDistance(Math.min(...state.chaserList.map((chaser) => haversine(state.runner, chaser)))); }
   };
   const startLocation = () => {
     if (!navigator.geolocation) return setGpsStatus('このブラウザはGPSに対応していません', 'Safari または Chrome で開いてください');
@@ -152,7 +154,8 @@
   };
 
   byId('solo-button').addEventListener('click', () => showScreen('solo'));
-  document.querySelectorAll('[data-difficulty]').forEach((button) => button.addEventListener('click', () => { state.difficulty = button.dataset.difficulty; safetyDialog.showModal(); }));
+  document.querySelectorAll('[data-difficulty]').forEach((button) => button.addEventListener('click', () => { state.difficulty = button.dataset.difficulty; showScreen('goal'); }));
+  document.querySelectorAll('[data-goal-type]').forEach((button) => button.addEventListener('click', () => { state.goalType = button.dataset.goalType; state.goalValue = Number(button.dataset.goalValue); safetyDialog.showModal(); }));
   safetyCheck.addEventListener('change', () => { safetyConfirm.disabled = !safetyCheck.checked; });
   safetyDialog.addEventListener('close', () => { if (safetyDialog.returnValue === 'confirm' && safetyCheck.checked) openGame(); });
   byId('start-game-button').addEventListener('click', startGame);

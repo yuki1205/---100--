@@ -8,7 +8,7 @@
     <link rel="manifest" href="manifest.json" />
     <link rel="icon" href="assets/icon.svg" type="image/svg+xml" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="" />
-    <link rel="stylesheet" href="style.css?v=13" />
+    <link rel="stylesheet" href="style.css?v=14" />
     <title>ランナウェイ - GPS逃走ゲーム</title>
   </head>
   <body>
@@ -46,6 +46,20 @@
         </div>
       </section>
 
+      <section class="screen solo-screen is-hidden" data-screen="goal">
+        <header class="plain-header"><button class="back-button" data-back="solo" type="button" aria-label="戻る">←</button><h2>目標を選択</h2></header>
+        <div class="setup-content">
+          <p class="eyebrow">TIME ESCAPE</p>
+          <div class="goal-grid">
+            <button data-goal-type="time" data-goal-value="300" type="button">5分</button><button data-goal-type="time" data-goal-value="600" type="button">10分</button><button data-goal-type="time" data-goal-value="1200" type="button">20分</button><button data-goal-type="time" data-goal-value="1800" type="button">30分</button><button data-goal-type="time" data-goal-value="3600" type="button">60分</button>
+          </div>
+          <p class="eyebrow goal-heading">DISTANCE ESCAPE</p>
+          <div class="goal-grid">
+            <button data-goal-type="distance" data-goal-value="1000" type="button">1km</button><button data-goal-type="distance" data-goal-value="3000" type="button">3km</button><button data-goal-type="distance" data-goal-value="5000" type="button">5km</button><button data-goal-type="distance" data-goal-value="10000" type="button">10km</button>
+          </div>
+        </div>
+      </section>
+
       <section class="screen game-screen is-hidden" data-screen="game">
         <div id="map" aria-label="現在地マップ"></div>
         <header class="game-header">
@@ -60,7 +74,7 @@
           <strong id="location-reading">GPSを取得しています</strong>
           <span id="accuracy-reading">屋外の開けた場所でお待ちください</span>
           <div class="game-stats">
-            <div><span>残り時間</span><strong id="time-reading">10:00</strong></div>
+            <div><span id="primary-label">残り時間</span><strong id="time-reading">10:00</strong></div>
             <div><span>走行距離</span><strong id="distance-reading">0 m</strong></div>
             <div><span>最接近</span><strong id="nearest-reading">-- m</strong></div>
           </div>
@@ -103,7 +117,7 @@
     </dialog>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
-    <script src="settings.js?v=13"></script>
-    <script src="app.js?v=13"></script>
+    <script src="settings.js?v=14"></script>
+    <script src="app.js?v=14"></script>
   </body>
 </html>
