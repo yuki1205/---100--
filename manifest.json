@@ -2,8 +2,12 @@
   "name": "ランナウェイ - GPS逃走ゲーム",
   "short_name": "ランナウェイ",
   "description": "街が、ゲームフィールドになる。",
+  "id": "./",
   "start_url": "./",
+  "scope": "./",
   "display": "standalone",
+  "orientation": "portrait",
+  "categories": ["games", "entertainment"],
   "background_color": "#071018",
   "theme_color": "#071018",
   "icons": [{ "src": "assets/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }]
