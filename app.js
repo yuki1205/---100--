@@ -155,7 +155,7 @@
   };
 
   byId('solo-button').addEventListener('click', () => showScreen('solo'));
-  document.querySelectorAll('[data-difficulty]').forEach((button) => button.addEventListener('click', () => { state.difficulty = button.dataset.difficulty; state.custom = null; state.goalType = 'time'; state.goalValue = difficulties[state.difficulty].defaultTargetSeconds; showScreen('goal'); }));
+  document.querySelectorAll('[data-difficulty]').forEach((button) => button.addEventListener('click', () => { state.difficulty = button.dataset.difficulty; state.custom = null; state.goalType = 'time'; state.goalValue = 600; showScreen('goal'); }));
   byId('custom-button').addEventListener('click', () => showScreen('custom'));
   const syncCustom = () => { byId('custom-count-output').textContent = `${byId('custom-count').value}体`; byId('custom-grace-output').textContent = `${byId('custom-grace').value}秒`; };
   byId('custom-count').addEventListener('input', syncCustom); byId('custom-grace').addEventListener('input', syncCustom);
