@@ -8,7 +8,7 @@
     <link rel="manifest" href="manifest.json" />
     <link rel="icon" href="assets/icon.svg" type="image/svg+xml" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="" />
-    <link rel="stylesheet" href="style.css?v=25" />
+    <link rel="stylesheet" href="style.css?v=26" />
     <title>ランナウェイ - GPS逃走ゲーム</title>
   </head>
   <body>
@@ -83,6 +83,7 @@
           </div>
           <button class="icon-button" id="end-button" type="button" aria-label="ホームへ戻る" title="ホームへ戻る">×</button>
         </header>
+        <p id="event-toast" class="event-toast is-hidden" role="status"></p>
         <section class="location-panel" aria-live="polite">
           <div class="game-row"><div class="runner-label"><i></i> RUNNER</div><div class="runner-label chaser-label"><i></i> CHASER</div></div>
           <strong id="location-reading">GPSを取得しています</strong>
@@ -135,7 +136,7 @@
     </dialog>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
-    <script src="settings.js?v=25"></script>
-    <script src="app.js?v=25"></script>
+    <script src="settings.js?v=26"></script>
+    <script src="app.js?v=26"></script>
   </body>
 </html>
