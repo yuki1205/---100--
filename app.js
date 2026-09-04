@@ -155,16 +155,21 @@
     const elapsed = state.startedAt ? Math.floor((Date.now() - state.startedAt) / 1000) : 0;
     byId('result-label').textContent = outcome === 'escaped' ? 'ミッション完了' : outcome === 'caught' ? 'チェイス終了' : '逃走終了';
     byId('result-title').textContent = outcome === 'escaped' ? 'ESCAPED!' : outcome === 'caught' ? 'CAUGHT' : 'RETIRED';
-    byId('result-detail').textContent = outcome === 'escaped' ? '逃走成功' : outcome === 'caught' ? '確保されました' : '逃走を終了しました';
+    const resultDetail = outcome === 'escaped' ? '逃走成功' : outcome === 'caught' ? '確保されました' : '逃走を終了しました';
     byId('result-time').textContent = formatTime(elapsed); byId('result-distance').textContent = formatDistance(state.distanceMeters);
     const difficulty = activeDifficulty();
     const score = Math.round(state.distanceMeters * 5 + elapsed * 3 + difficulty.initialChaserCount * 500 + (outcome === 'escaped' ? 2000 : 0));
     const goal = state.goalType === 'time' ? `時間 ${state.goalValue / 60}分` : `距離 ${formatDistance(state.goalValue)}`;
     const events = [['チェイサー追加', difficulty.addChaserEnabled], ['速度アップ', difficulty.speedUpEnabled], ['接近ダッシュ', difficulty.dashEnabled]].filter(([, enabled]) => enabled !== false).map(([label]) => label).join('・');
-    state.result = { outcome, elapsed, distance: Math.round(state.distanceMeters), score, conditions: { difficulty: difficulty.label === 'CUSTOM' ? 'カスタム' : difficulty.label, chasers: difficulty.initialChaserCount, grace: difficulty.graceSeconds, speed: difficulty.speedKmh, goal, events } };
-    byId('result-score').textContent = `${score.toLocaleString()} pt`;
+    const distance = Math.round(state.distanceMeters);
     const records = getHistory();
-    records.unshift({ outcome: outcome.toUpperCase(), elapsed, distance: Math.round(state.distanceMeters), score, difficulty: difficulty.label, at: Date.now() });
+    const bestScore = records.length ? Math.max(...records.map((record) => record.score)) : -1;
+    const bestDistance = records.length ? Math.max(...records.map((record) => record.distance)) : -1;
+    const achievements = [score > bestScore && 'スコア自己ベスト更新！', distance > bestDistance && '最長距離更新！'].filter(Boolean);
+    state.result = { outcome, elapsed, distance, score, achievements, conditions: { difficulty: difficulty.label === 'CUSTOM' ? 'カスタム' : difficulty.label, chasers: difficulty.initialChaserCount, grace: difficulty.graceSeconds, speed: difficulty.speedKmh, goal, events } };
+    byId('result-detail').textContent = achievements.length ? `${resultDetail} / ${achievements.join(' ')}` : resultDetail;
+    byId('result-score').textContent = `${score.toLocaleString()} pt`;
+    records.unshift({ outcome: outcome.toUpperCase(), elapsed, distance, score, difficulty: difficulty.label, at: Date.now() });
     localStorage.setItem(historyKey, JSON.stringify(records.slice(0, 30)));
     renderHistory();
     vibrate(outcome === 'caught' ? [200, 100, 200, 100, 300] : [100, 80, 100]);
@@ -288,7 +293,8 @@
     const outcome = state.result.outcome === 'escaped' ? '逃走成功' : state.result.outcome === 'caught' ? '確保' : 'リタイア';
     const conditions = state.result.conditions;
     const url = `${location.origin}${location.pathname}`;
-    const text = `RUNAWAY ${outcome}\n\nスコア: ${state.result.score.toLocaleString()} pt\n時間: ${formatTime(state.result.elapsed)}\n走行距離: ${formatDistance(state.result.distance)}\n\nプレイ条件\n難易度: ${conditions.difficulty}\n目標: ${conditions.goal}\nチェイサー: ${conditions.chasers}体 / 猶予: ${conditions.grace}秒 / 速さ: ${conditions.speed}km/h\nイベント: ${conditions.events}\n\n#ランナウェイ #RUNAWAY`;
+    const achievementText = state.result.achievements.length ? `\n${state.result.achievements.join(' ')}` : '';
+    const text = `RUNAWAY ${outcome}\n\nスコア: ${state.result.score.toLocaleString()} pt${achievementText}\n時間: ${formatTime(state.result.elapsed)}\n走行距離: ${formatDistance(state.result.distance)}\n\nプレイ条件\n難易度: ${conditions.difficulty}\n目標: ${conditions.goal}\nチェイサー: ${conditions.chasers}体 / 猶予: ${conditions.grace}秒 / 速さ: ${conditions.speed}km/h\nイベント: ${conditions.events}\n\n#ランナウェイ #RUNAWAY`;
     const status = byId('share-status');
     try {
       if (navigator.share) {
