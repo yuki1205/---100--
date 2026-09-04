@@ -60,11 +60,13 @@
   const activeDifficulty = () => state.custom || difficulties[state.difficulty];
   const historyKey = 'runaway-history';
   const getHistory = () => JSON.parse(localStorage.getItem(historyKey) || '[]');
+  const historyOutcome = (outcome) => ({ ESCAPED: '逃走成功', CAUGHT: '確保', RETIRED: 'リタイア' })[outcome] || outcome;
+  const formatRecordDate = (timestamp) => timestamp ? new Intl.DateTimeFormat('ja-JP', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' }).format(timestamp) : '';
   const renderHistory = () => {
     const records = getHistory();
     byId('best-score').textContent = records.length ? `${Math.max(...records.map((record) => record.score)).toLocaleString()} pt` : '-- pt';
     byId('best-distance').textContent = records.length ? formatDistance(Math.max(...records.map((record) => record.distance))) : '-- km';
-    byId('history-list').innerHTML = records.length ? records.map((record) => `<article class="history-item"><strong>${record.outcome}</strong><span>${formatDistance(record.distance)} / ${formatTime(record.elapsed)} / ${record.score.toLocaleString()}pt</span></article>`).join('') : '<p>まだ逃走記録はありません</p>';
+    byId('history-list').innerHTML = records.length ? records.map((record) => `<article class="history-item"><div><strong>${historyOutcome(record.outcome)}</strong><small>${record.difficulty || '以前の記録'} ${formatRecordDate(record.at)}</small></div><span>${formatDistance(record.distance)} / ${formatTime(record.elapsed)} / ${record.score.toLocaleString()}pt</span></article>`).join('') : '<p>まだ逃走記録はありません</p>';
   };
 
   const createMap = (lat, lng) => {
@@ -120,7 +122,7 @@
     state.result = { outcome, elapsed, distance: Math.round(state.distanceMeters), score };
     byId('result-score').textContent = `${score.toLocaleString()} pt`;
     const records = getHistory();
-    records.unshift({ outcome: outcome.toUpperCase(), elapsed, distance: Math.round(state.distanceMeters), score, at: Date.now() });
+    records.unshift({ outcome: outcome.toUpperCase(), elapsed, distance: Math.round(state.distanceMeters), score, difficulty: difficulty.label, at: Date.now() });
     localStorage.setItem(historyKey, JSON.stringify(records.slice(0, 30)));
     renderHistory();
     vibrate(outcome === 'caught' ? [200, 100, 200, 100, 300] : [100, 80, 100]);
@@ -248,6 +250,11 @@
     }
   });
   byId('history-button').addEventListener('click', () => showScreen('history'));
+  byId('clear-history-button').addEventListener('click', () => {
+    if (!getHistory().length || !confirm('逃走記録をすべて消去しますか？')) return;
+    localStorage.removeItem(historyKey);
+    renderHistory();
+  });
   document.querySelectorAll('[data-back]').forEach((button) => button.addEventListener('click', () => showScreen(button.dataset.back)));
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'visible' && ['countdown', 'grace', 'chase'].includes(state.phase)) void keepScreenAwake();
