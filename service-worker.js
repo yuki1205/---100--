@@ -1,5 +1,5 @@
-const CACHE_NAME = 'runaway-v4';
-const APP_FILES = ['./', './index.html', './style.css', './app.js', './settings.js', './manifest.json', './assets/icon.svg'];
+const CACHE_NAME = 'runaway-v5';
+const APP_FILES = ['./', './index.html', './style.css', './app.js', './settings.js', './manifest.json', './assets/icon.svg', './assets/runaway-characters.png'];
 self.addEventListener('install', (event) => event.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.addAll(APP_FILES))));
 self.addEventListener('activate', (event) => event.waitUntil(
   caches.keys()
