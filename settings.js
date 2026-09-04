@@ -15,9 +15,9 @@ window.RUNAWAY_SETTINGS = {
     caughtHoldSeconds: 3,
   },
   difficulties: {
-    easy: { label: 'EASY', initialChaserCount: 1, graceSeconds: 90, speedKmh: 8 },
-    normal: { label: 'NORMAL', initialChaserCount: 2, graceSeconds: 60, speedKmh: 10, recommended: true },
-    hard: { label: 'HARD', initialChaserCount: 3, graceSeconds: 30, speedKmh: 12 },
+    easy: { label: 'EASY', initialChaserCount: 1, graceSeconds: 90, speedKmh: 8, defaultTargetSeconds: 30 * 60 },
+    normal: { label: 'NORMAL', initialChaserCount: 2, graceSeconds: 60, speedKmh: 10, defaultTargetSeconds: 20 * 60, recommended: true },
+    hard: { label: 'HARD', initialChaserCount: 3, graceSeconds: 30, speedKmh: 12, defaultTargetSeconds: 10 * 60 },
   },
   goals: {
     timeSeconds: [5 * 60, 10 * 60, 20 * 60, 30 * 60, 60 * 60],

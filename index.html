@@ -8,7 +8,7 @@
     <link rel="manifest" href="manifest.json" />
     <link rel="icon" href="assets/icon.svg" type="image/svg+xml" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="" />
-    <link rel="stylesheet" href="style.css?v=14" />
+    <link rel="stylesheet" href="style.css?v=15" />
     <title>ランナウェイ - GPS逃走ゲーム</title>
   </head>
   <body>
@@ -43,17 +43,28 @@
           <button class="difficulty-button easy" data-difficulty="easy" type="button"><strong>EASY</strong><span>チェイサー1体 / 猶予90秒</span></button>
           <button class="difficulty-button normal" data-difficulty="normal" type="button"><strong>NORMAL <em>おすすめ</em></strong><span>チェイサー2体 / 猶予60秒</span></button>
           <button class="difficulty-button hard" data-difficulty="hard" type="button"><strong>HARD</strong><span>チェイサー3体 / 猶予30秒</span></button>
+          <button class="difficulty-button custom" id="custom-button" type="button"><strong>カスタム</strong><span>チェイサー数と猶予を自分で設定</span></button>
+        </div>
+      </section>
+
+      <section class="screen solo-screen is-hidden" data-screen="custom">
+        <header class="plain-header"><button class="back-button" data-back="solo" type="button" aria-label="戻る">←</button><h2>カスタム設定</h2></header>
+        <div class="setup-content custom-form">
+          <label>初期チェイサー数 <output id="custom-count-output">1体</output><input id="custom-count" type="range" min="1" max="5" value="1" /></label>
+          <label>逃走猶予 <output id="custom-grace-output">60秒</output><input id="custom-grace" type="range" min="5" max="90" step="5" value="60" /></label>
+          <label>チェイサーの速さ<select id="custom-speed"><option value="8">ふつう</option><option value="10" selected>速い</option><option value="12">超速い</option></select></label>
+          <button id="custom-next-button" class="primary-button" type="button">目標を選ぶ</button>
         </div>
       </section>
 
       <section class="screen solo-screen is-hidden" data-screen="goal">
         <header class="plain-header"><button class="back-button" data-back="solo" type="button" aria-label="戻る">←</button><h2>目標を選択</h2></header>
         <div class="setup-content">
-          <p class="eyebrow">TIME ESCAPE</p>
+          <p class="eyebrow">時間から選ぶ</p>
           <div class="goal-grid">
             <button data-goal-type="time" data-goal-value="300" type="button">5分</button><button data-goal-type="time" data-goal-value="600" type="button">10分</button><button data-goal-type="time" data-goal-value="1200" type="button">20分</button><button data-goal-type="time" data-goal-value="1800" type="button">30分</button><button data-goal-type="time" data-goal-value="3600" type="button">60分</button>
           </div>
-          <p class="eyebrow goal-heading">DISTANCE ESCAPE</p>
+          <p class="eyebrow goal-heading">距離から選ぶ</p>
           <div class="goal-grid">
             <button data-goal-type="distance" data-goal-value="1000" type="button">1km</button><button data-goal-type="distance" data-goal-value="3000" type="button">3km</button><button data-goal-type="distance" data-goal-value="5000" type="button">5km</button><button data-goal-type="distance" data-goal-value="10000" type="button">10km</button>
           </div>
@@ -117,7 +128,7 @@
     </dialog>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
-    <script src="settings.js?v=14"></script>
-    <script src="app.js?v=14"></script>
+    <script src="settings.js?v=15"></script>
+    <script src="app.js?v=15"></script>
   </body>
 </html>

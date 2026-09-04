@@ -3,7 +3,7 @@
   const safetyDialog = document.querySelector('#safety-dialog');
   const safetyCheck = document.querySelector('#safety-check');
   const safetyConfirm = document.querySelector('#safety-confirm');
-  const state = { map: null, runnerMarker: null, accuracyCircle: null, chaserMarkers: [], watchId: null, runner: null, previousPosition: null, chaserList: [], difficulty: 'normal', goalType: 'time', goalValue: 600, phase: 'idle', distanceMeters: 0, startedAt: null, phaseStartedAt: null, lastTickAt: null, caughtSince: null, lastAlert: null, timerId: null };
+  const state = { map: null, runnerMarker: null, accuracyCircle: null, chaserMarkers: [], watchId: null, runner: null, previousPosition: null, chaserList: [], difficulty: 'normal', custom: null, goalType: 'time', goalValue: 600, phase: 'idle', distanceMeters: 0, startedAt: null, phaseStartedAt: null, lastTickAt: null, caughtSince: null, lastAlert: null, timerId: null };
 
   const byId = (id) => document.querySelector(`#${id}`);
   const formatDistance = (meters) => meters < 1000 ? `${Math.round(meters)} m` : `${(meters / 1000).toFixed(2)} km`;
@@ -37,6 +37,7 @@
     byId('gps-status-panel').classList.toggle('is-hidden', status === '位置情報を取得中');
   };
   const setPhase = (title, detail, canStart = false) => { byId('phase-title').textContent = title; byId('phase-detail').textContent = detail; byId('start-game-button').disabled = !canStart; };
+  const activeDifficulty = () => state.custom || difficulties[state.difficulty];
 
   const createMap = (lat, lng) => {
     if (state.map) return;
@@ -55,7 +56,7 @@
   const spawnChaser = () => {
     if (!state.runner || state.chaserList.length) return;
     const range = distances.initialSpawnMaxMeters - distances.initialSpawnMinMeters;
-    const count = difficulties[state.difficulty].initialChaserCount;
+    const count = activeDifficulty().initialChaserCount;
     const startBearing = Math.random() * 360;
     state.chaserList = Array.from({ length: count }, (_, index) => destination(state.runner, startBearing + index * (360 / count), distances.initialSpawnMinMeters + Math.random() * range));
     updateChaserMarkers();
@@ -89,7 +90,7 @@
   };
   const moveChaser = (seconds) => {
     if (!state.runner || !state.chaserList.length) return;
-    const speed = difficulties[state.difficulty].speedKmh;
+    const speed = activeDifficulty().speedKmh;
     state.chaserList = state.chaserList.map((chaser) => {
       const remaining = haversine(chaser, state.runner); const moved = Math.min(remaining, speed * 1000 / 3600 * seconds);
       return destination(chaser, headingTo(chaser, state.runner), moved);
@@ -109,7 +110,7 @@
       return;
     }
     if (state.phase === 'grace') {
-      const left = Math.max(0, difficulties[state.difficulty].graceSeconds - Math.floor((now - state.phaseStartedAt) / 1000));
+      const left = Math.max(0, activeDifficulty().graceSeconds - Math.floor((now - state.phaseStartedAt) / 1000));
       setPhase('RUN!', `チェイサー追跡開始まで ${left}秒`);
       if (!left) { state.phase = 'chase'; state.lastTickAt = now; byId('ready-panel').classList.add('is-hidden'); vibrate([120, 80, 120]); }
       return;
@@ -139,7 +140,7 @@
     if (state.chaserList.length) framePlayers();
     else state.map.setView(point, Math.max(state.map.getZoom(), mapSettings.initialZoom), { animate: true });
     byId('location-reading').textContent = '現在地を取得しました'; setGpsStatus(accuracy > gps.poorAccuracyMeters ? 'GPS精度低下中' : '位置情報を取得中', `GPS精度: 約${Math.round(accuracy)}m`); byId('distance-reading').textContent = formatDistance(state.distanceMeters);
-    if (state.phase === 'ready') { spawnChaser(); framePlayers(); const difficulty = difficulties[state.difficulty]; const goal = state.goalType === 'time' ? `${state.goalValue / 60}分` : formatDistance(state.goalValue); setPhase('READY', `${goal}、${difficulty.initialChaserCount}体のチェイサーから逃げ切れ。`, true); byId('nearest-reading').textContent = formatDistance(Math.min(...state.chaserList.map((chaser) => haversine(state.runner, chaser)))); }
+    if (state.phase === 'ready') { spawnChaser(); framePlayers(); const difficulty = activeDifficulty(); const goal = state.goalType === 'time' ? `${state.goalValue / 60}分` : formatDistance(state.goalValue); setPhase('READY', `${goal}、${difficulty.initialChaserCount}体のチェイサーから逃げ切れ。`, true); byId('nearest-reading').textContent = formatDistance(Math.min(...state.chaserList.map((chaser) => haversine(state.runner, chaser)))); }
   };
   const startLocation = () => {
     if (!navigator.geolocation) return setGpsStatus('このブラウザはGPSに対応していません', 'Safari または Chrome で開いてください');
@@ -154,7 +155,11 @@
   };
 
   byId('solo-button').addEventListener('click', () => showScreen('solo'));
-  document.querySelectorAll('[data-difficulty]').forEach((button) => button.addEventListener('click', () => { state.difficulty = button.dataset.difficulty; showScreen('goal'); }));
+  document.querySelectorAll('[data-difficulty]').forEach((button) => button.addEventListener('click', () => { state.difficulty = button.dataset.difficulty; state.custom = null; state.goalType = 'time'; state.goalValue = difficulties[state.difficulty].defaultTargetSeconds; showScreen('goal'); }));
+  byId('custom-button').addEventListener('click', () => showScreen('custom'));
+  const syncCustom = () => { byId('custom-count-output').textContent = `${byId('custom-count').value}体`; byId('custom-grace-output').textContent = `${byId('custom-grace').value}秒`; };
+  byId('custom-count').addEventListener('input', syncCustom); byId('custom-grace').addEventListener('input', syncCustom);
+  byId('custom-next-button').addEventListener('click', () => { state.custom = { label: 'CUSTOM', initialChaserCount: Number(byId('custom-count').value), graceSeconds: Number(byId('custom-grace').value), speedKmh: Number(byId('custom-speed').value) }; state.goalType = 'time'; state.goalValue = 600; showScreen('goal'); });
   document.querySelectorAll('[data-goal-type]').forEach((button) => button.addEventListener('click', () => { state.goalType = button.dataset.goalType; state.goalValue = Number(button.dataset.goalValue); safetyDialog.showModal(); }));
   safetyCheck.addEventListener('change', () => { safetyConfirm.disabled = !safetyCheck.checked; });
   safetyDialog.addEventListener('close', () => { if (safetyDialog.returnValue === 'confirm' && safetyCheck.checked) openGame(); });
