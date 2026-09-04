@@ -287,14 +287,15 @@
     if (!state.result) return;
     const outcome = state.result.outcome === 'escaped' ? '逃走成功' : state.result.outcome === 'caught' ? '確保' : 'リタイア';
     const conditions = state.result.conditions;
+    const url = `${location.origin}${location.pathname}`;
     const text = `RUNAWAY ${outcome}\n\nスコア: ${state.result.score.toLocaleString()} pt\n時間: ${formatTime(state.result.elapsed)}\n走行距離: ${formatDistance(state.result.distance)}\n\nプレイ条件\n難易度: ${conditions.difficulty}\n目標: ${conditions.goal}\nチェイサー: ${conditions.chasers}体 / 猶予: ${conditions.grace}秒 / 速さ: ${conditions.speed}km/h\nイベント: ${conditions.events}\n\n#ランナウェイ #RUNAWAY`;
     const status = byId('share-status');
     try {
       if (navigator.share) {
-        await navigator.share({ title: 'RUNAWAY 逃走記録', text });
+        await navigator.share({ title: 'RUNAWAY 逃走記録', text, url });
         status.textContent = '共有しました';
       } else if (navigator.clipboard?.writeText) {
-        await navigator.clipboard.writeText(text);
+        await navigator.clipboard.writeText(`${text}\n${url}`);
         status.textContent = '記録をコピーしました';
       } else {
         status.textContent = 'この端末では共有できません';
