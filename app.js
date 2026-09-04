@@ -1,9 +1,9 @@
 (() => {
-  const { gps, game, distances, chasers, map: mapSettings } = window.RUNAWAY_SETTINGS;
+  const { gps, game, distances, difficulties, map: mapSettings } = window.RUNAWAY_SETTINGS;
   const safetyDialog = document.querySelector('#safety-dialog');
   const safetyCheck = document.querySelector('#safety-check');
   const safetyConfirm = document.querySelector('#safety-confirm');
-  const state = { map: null, runnerMarker: null, accuracyCircle: null, chaserMarker: null, watchId: null, runner: null, previousPosition: null, chaser: null, phase: 'idle', distanceMeters: 0, startedAt: null, phaseStartedAt: null, lastTickAt: null, caughtSince: null, lastAlert: null, timerId: null };
+  const state = { map: null, runnerMarker: null, accuracyCircle: null, chaserMarkers: [], watchId: null, runner: null, previousPosition: null, chaserList: [], difficulty: 'normal', phase: 'idle', distanceMeters: 0, startedAt: null, phaseStartedAt: null, lastTickAt: null, caughtSince: null, lastAlert: null, timerId: null };
 
   const byId = (id) => document.querySelector(`#${id}`);
   const formatDistance = (meters) => meters < 1000 ? `${Math.round(meters)} m` : `${(meters / 1000).toFixed(2)} km`;
@@ -44,22 +44,25 @@
     L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: mapSettings.maxZoom, attribution: '&copy; OpenStreetMap contributors' }).addTo(state.map);
     L.control.zoom({ position: 'bottomright' }).addTo(state.map);
   };
-  const updateChaserMarker = () => {
-    if (!state.chaser) return;
-    const point = [state.chaser.lat, state.chaser.lng];
+  const updateChaserMarkers = () => {
     const icon = L.divIcon({ className: 'chaser-marker-wrap', html: '<span class="chaser-marker"></span>', iconSize: [30, 30], iconAnchor: [15, 15] });
-    if (!state.chaserMarker) state.chaserMarker = L.marker(point, { icon, zIndexOffset: 900 }).addTo(state.map).bindTooltip('CHASER', { direction: 'top', offset: [0, -13] });
-    else state.chaserMarker.setLatLng(point);
+    state.chaserList.forEach((chaser, index) => {
+      const point = [chaser.lat, chaser.lng];
+      if (!state.chaserMarkers[index]) state.chaserMarkers[index] = L.marker(point, { icon, zIndexOffset: 900 }).addTo(state.map).bindTooltip('CHASER', { direction: 'top', offset: [0, -13] });
+      else state.chaserMarkers[index].setLatLng(point);
+    });
   };
   const spawnChaser = () => {
-    if (!state.runner || state.chaser) return;
+    if (!state.runner || state.chaserList.length) return;
     const range = distances.initialSpawnMaxMeters - distances.initialSpawnMinMeters;
-    state.chaser = destination(state.runner, Math.random() * 360, distances.initialSpawnMinMeters + Math.random() * range);
-    updateChaserMarker();
+    const count = difficulties[state.difficulty].initialChaserCount;
+    const startBearing = Math.random() * 360;
+    state.chaserList = Array.from({ length: count }, (_, index) => destination(state.runner, startBearing + index * (360 / count), distances.initialSpawnMinMeters + Math.random() * range));
+    updateChaserMarkers();
   };
   const framePlayers = () => {
-    if (!state.map || !state.runner || !state.chaser) return;
-    state.map.fitBounds([[state.runner.lat, state.runner.lng], [state.chaser.lat, state.chaser.lng]], {
+    if (!state.map || !state.runner || !state.chaserList.length) return;
+    state.map.fitBounds([[state.runner.lat, state.runner.lng], ...state.chaserList.map((chaser) => [chaser.lat, chaser.lng])], {
       paddingTopLeft: [24, 130],
       paddingBottomRight: [24, 230],
       maxZoom: 16,
@@ -68,8 +71,8 @@
   };
   const resetGame = () => {
     clearInterval(state.timerId);
-    state.phase = 'ready'; state.chaser = null; state.previousPosition = null; state.distanceMeters = 0; state.startedAt = null; state.phaseStartedAt = null; state.lastTickAt = null; state.caughtSince = null; state.lastAlert = null;
-    if (state.chaserMarker) { state.map.removeLayer(state.chaserMarker); state.chaserMarker = null; }
+    state.phase = 'ready'; state.chaserList = []; state.previousPosition = null; state.distanceMeters = 0; state.startedAt = null; state.phaseStartedAt = null; state.lastTickAt = null; state.caughtSince = null; state.lastAlert = null;
+    state.chaserMarkers.forEach((marker) => state.map?.removeLayer(marker)); state.chaserMarkers = [];
     byId('result-panel').classList.add('is-hidden'); byId('ready-panel').classList.remove('is-hidden');
     byId('time-reading').textContent = formatTime(game.prototypeTargetSeconds); byId('distance-reading').textContent = '0 m'; byId('nearest-reading').textContent = '-- m';
   };
@@ -84,9 +87,13 @@
     vibrate(outcome === 'caught' ? [200, 100, 200, 100, 300] : [100, 80, 100]);
   };
   const moveChaser = (seconds) => {
-    if (!state.runner || !state.chaser) return;
-    const remaining = haversine(state.chaser, state.runner); const moved = Math.min(remaining, chasers.normalSpeedKmh * 1000 / 3600 * seconds);
-    state.chaser = destination(state.chaser, headingTo(state.chaser, state.runner), moved); updateChaserMarker();
+    if (!state.runner || !state.chaserList.length) return;
+    const speed = difficulties[state.difficulty].speedKmh;
+    state.chaserList = state.chaserList.map((chaser) => {
+      const remaining = haversine(chaser, state.runner); const moved = Math.min(remaining, speed * 1000 / 3600 * seconds);
+      return destination(chaser, headingTo(chaser, state.runner), moved);
+    });
+    updateChaserMarkers();
   };
   const gameTick = () => {
     if (!state.startedAt || state.phase === 'ended') return;
@@ -100,14 +107,14 @@
       return;
     }
     if (state.phase === 'grace') {
-      const left = Math.max(0, game.normalGraceSeconds - Math.floor((now - state.phaseStartedAt) / 1000));
+      const left = Math.max(0, difficulties[state.difficulty].graceSeconds - Math.floor((now - state.phaseStartedAt) / 1000));
       setPhase('RUN!', `チェイサー追跡開始まで ${left}秒`);
       if (!left) { state.phase = 'chase'; state.lastTickAt = now; byId('ready-panel').classList.add('is-hidden'); vibrate([120, 80, 120]); }
       return;
     }
-    if (state.phase !== 'chase' || !state.runner || !state.chaser) return;
+    if (state.phase !== 'chase' || !state.runner || !state.chaserList.length) return;
     const delta = Math.min(3, Math.max(0, (now - state.lastTickAt) / 1000)); state.lastTickAt = now; moveChaser(delta);
-    const nearest = haversine(state.runner, state.chaser); byId('nearest-reading').textContent = formatDistance(nearest);
+    const nearest = Math.min(...state.chaserList.map((chaser) => haversine(state.runner, chaser))); byId('nearest-reading').textContent = formatDistance(nearest);
     const alert = nearest <= distances.spottedMeters ? 'DANGER' : nearest <= distances.warningMeters ? 'WARNING' : nearest <= distances.detectMeters ? 'CHASER DETECTED' : '';
     if (alert && alert !== state.lastAlert) { state.lastAlert = alert; setGpsStatus(alert, `最接近チェイサー: ${formatDistance(nearest)}`); vibrate(alert === 'DANGER' ? [100, 60, 100, 60, 100] : alert === 'WARNING' ? [100, 70, 100] : 100); }
     if (nearest <= distances.catchMeters && state.runner.accuracy <= gps.poorAccuracyMeters) {
@@ -127,10 +134,10 @@
       if (next.accuracy <= gps.poorAccuracyMeters && moved / seconds * 3.6 <= gps.maxPlausibleSpeedKmh) state.distanceMeters += moved;
     }
     state.runner = next; state.previousPosition = next;
-    if (state.chaser) framePlayers();
+    if (state.chaserList.length) framePlayers();
     else state.map.setView(point, Math.max(state.map.getZoom(), mapSettings.initialZoom), { animate: true });
     byId('location-reading').textContent = '現在地を取得しました'; setGpsStatus(accuracy > gps.poorAccuracyMeters ? 'GPS精度低下中' : '位置情報を取得中', `GPS精度: 約${Math.round(accuracy)}m`); byId('distance-reading').textContent = formatDistance(state.distanceMeters);
-    if (state.phase === 'ready') { spawnChaser(); framePlayers(); setPhase('READY', '10分間、チェイサーから逃げ切れ。安全を確認して開始してください。', true); byId('nearest-reading').textContent = formatDistance(haversine(state.runner, state.chaser)); }
+    if (state.phase === 'ready') { spawnChaser(); framePlayers(); const difficulty = difficulties[state.difficulty]; setPhase('READY', `${difficulty.label}: ${difficulty.initialChaserCount}体のチェイサーから逃げ切れ。`, true); byId('nearest-reading').textContent = formatDistance(Math.min(...state.chaserList.map((chaser) => haversine(state.runner, chaser)))); }
   };
   const startLocation = () => {
     if (!navigator.geolocation) return setGpsStatus('このブラウザはGPSに対応していません', 'Safari または Chrome で開いてください');
@@ -144,7 +151,8 @@
     state.phase = 'countdown'; state.startedAt = Date.now(); state.phaseStartedAt = state.startedAt; byId('start-game-button').disabled = true; state.timerId = setInterval(gameTick, 250); gameTick();
   };
 
-  byId('solo-button').addEventListener('click', () => safetyDialog.showModal());
+  byId('solo-button').addEventListener('click', () => showScreen('solo'));
+  document.querySelectorAll('[data-difficulty]').forEach((button) => button.addEventListener('click', () => { state.difficulty = button.dataset.difficulty; safetyDialog.showModal(); }));
   safetyCheck.addEventListener('change', () => { safetyConfirm.disabled = !safetyCheck.checked; });
   safetyDialog.addEventListener('close', () => { if (safetyDialog.returnValue === 'confirm' && safetyCheck.checked) openGame(); });
   byId('start-game-button').addEventListener('click', startGame);
