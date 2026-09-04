@@ -36,3 +36,4 @@ dialog { width: min(calc(100% - 32px), 440px); border: 1px solid var(--line); bo
 .secondary-button { min-height: 46px; width: 100%; border: 1px solid #42657d; border-radius: 6px; background: transparent; color: var(--text); font-weight: 800; text-align: center; }
 .result-panel .secondary-button { margin-top: 2px; }
 .share-status { min-height: 16px; margin: 6px 0 0 !important; color: var(--muted) !important; font-size: .72rem; }
+.result-panel .text-button { display: block; width: 100%; margin-top: 2px; text-align: center; }

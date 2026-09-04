@@ -186,6 +186,7 @@
   };
   const stopLocation = () => { if (state.watchId !== null) navigator.geolocation.clearWatch(state.watchId); state.watchId = null; };
   const openGame = () => { showScreen('game'); resetGame(); startLocation(); };
+  const showSafetyDialog = () => { safetyCheck.checked = false; safetyConfirm.disabled = true; safetyDialog.showModal(); };
   const startGame = () => {
     if (!state.runner || state.phase !== 'ready') return;
     state.phase = 'countdown'; state.startedAt = Date.now(); state.phaseStartedAt = state.startedAt; byId('start-game-button').disabled = true; state.timerId = setInterval(gameTick, 250); gameTick();
@@ -197,11 +198,12 @@
   const syncCustom = () => { byId('custom-count-output').textContent = `${byId('custom-count').value}体`; byId('custom-grace-output').textContent = `${byId('custom-grace').value}秒`; };
   byId('custom-count').addEventListener('input', syncCustom); byId('custom-grace').addEventListener('input', syncCustom);
   byId('custom-next-button').addEventListener('click', () => { state.custom = { label: 'CUSTOM', initialChaserCount: Number(byId('custom-count').value), graceSeconds: Number(byId('custom-grace').value), speedKmh: Number(byId('custom-speed').value), addChaserEnabled: byId('custom-add').checked, speedUpEnabled: byId('custom-speedup').checked, dashEnabled: byId('custom-dash').checked }; state.goalType = 'time'; state.goalValue = 600; showScreen('goal'); });
-  document.querySelectorAll('[data-goal-type]').forEach((button) => button.addEventListener('click', () => { state.goalType = button.dataset.goalType; state.goalValue = Number(button.dataset.goalValue); safetyDialog.showModal(); }));
+  document.querySelectorAll('[data-goal-type]').forEach((button) => button.addEventListener('click', () => { state.goalType = button.dataset.goalType; state.goalValue = Number(button.dataset.goalValue); showSafetyDialog(); }));
   safetyCheck.addEventListener('change', () => { safetyConfirm.disabled = !safetyCheck.checked; });
   safetyDialog.addEventListener('close', () => { if (safetyDialog.returnValue === 'confirm' && safetyCheck.checked) openGame(); });
   byId('start-game-button').addEventListener('click', startGame);
   byId('end-button').addEventListener('click', () => { if (['countdown', 'grace', 'chase'].includes(state.phase)) { if (confirm('逃走を終了しますか？')) finishGame('retired'); return; } stopLocation(); showScreen('home'); });
+  byId('play-again-button').addEventListener('click', () => { stopLocation(); showSafetyDialog(); });
   byId('result-home-button').addEventListener('click', () => { stopLocation(); showScreen('home'); });
   byId('share-result-button').addEventListener('click', async () => {
     if (!state.result) return;
