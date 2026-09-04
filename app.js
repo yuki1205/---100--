@@ -27,6 +27,7 @@
     return { lat: nextLat * 180 / Math.PI, lng: nextLng * 180 / Math.PI };
   };
   const vibrate = (pattern) => { if (navigator.vibrate) navigator.vibrate(pattern); };
+  const isChaserActive = (chaser, now = Date.now()) => chaser.activatesAt <= now;
   const keepScreenAwake = async () => {
     if (!('wakeLock' in navigator) || state.wakeLock || document.visibilityState !== 'visible') return;
     try {
@@ -69,8 +70,9 @@
     const icon = L.divIcon({ className: 'chaser-marker-wrap', html: '<span class="chaser-marker"></span>', iconSize: [30, 30], iconAnchor: [15, 15] });
     state.chaserList.forEach((chaser, index) => {
       const point = [chaser.lat, chaser.lng];
-      if (!chaser.marker) chaser.marker = L.marker(point, { icon, zIndexOffset: 900 }).addTo(state.map).bindTooltip(chaser.activatesAt ? 'CHASER / STANDBY' : 'CHASER', { direction: 'top', offset: [0, -13] });
-      else chaser.marker.setLatLng(point);
+      const label = isChaserActive(chaser) ? 'CHASER' : 'CHASER / STANDBY';
+      if (!chaser.marker) chaser.marker = L.marker(point, { icon, zIndexOffset: 900 }).addTo(state.map).bindTooltip(label, { direction: 'top', offset: [0, -13] });
+      else chaser.marker.setLatLng(point).setTooltipContent(label);
     });
   };
   const spawnChaser = () => {
@@ -166,7 +168,9 @@
     }
     if (state.phase !== 'chase' || !state.runner || !state.chaserList.length) return;
     const delta = Math.min(3, Math.max(0, (now - state.lastTickAt) / 1000)); state.lastTickAt = now; moveChaser(delta);
-    const nearest = Math.min(...state.chaserList.map((chaser) => haversine(state.runner, chaser))); byId('nearest-reading').textContent = formatDistance(nearest);
+    const activeChasers = state.chaserList.filter((chaser) => isChaserActive(chaser, now));
+    if (!activeChasers.length) return;
+    const nearest = Math.min(...activeChasers.map((chaser) => haversine(state.runner, chaser))); byId('nearest-reading').textContent = formatDistance(nearest);
     const alert = nearest <= distances.spottedMeters ? 'DANGER' : nearest <= distances.warningMeters ? 'WARNING' : nearest <= distances.detectMeters ? 'CHASER DETECTED' : '';
     if (alert && alert !== state.lastAlert) { state.lastAlert = alert; setGpsStatus(alert, `最接近チェイサー: ${formatDistance(nearest)}`); vibrate(alert === 'DANGER' ? [100, 60, 100, 60, 100] : alert === 'WARNING' ? [100, 70, 100] : 100); }
     if (nearest <= distances.catchMeters && state.runner.accuracy <= gps.poorAccuracyMeters) {
