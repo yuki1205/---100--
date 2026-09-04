@@ -38,6 +38,14 @@
   };
   const setPhase = (title, detail, canStart = false) => { byId('phase-title').textContent = title; byId('phase-detail').textContent = detail; byId('start-game-button').disabled = !canStart; };
   const activeDifficulty = () => state.custom || difficulties[state.difficulty];
+  const historyKey = 'runaway-history';
+  const getHistory = () => JSON.parse(localStorage.getItem(historyKey) || '[]');
+  const renderHistory = () => {
+    const records = getHistory();
+    byId('best-score').textContent = records.length ? `${Math.max(...records.map((record) => record.score)).toLocaleString()} pt` : '-- pt';
+    byId('best-distance').textContent = records.length ? formatDistance(Math.max(...records.map((record) => record.distance))) : '-- km';
+    byId('history-list').innerHTML = records.length ? records.map((record) => `<article class="history-item"><strong>${record.outcome}</strong><span>${formatDistance(record.distance)} / ${formatTime(record.elapsed)} / ${record.score.toLocaleString()}pt</span></article>`).join('') : '<p>まだ逃走記録はありません</p>';
+  };
 
   const createMap = (lat, lng) => {
     if (state.map) return;
@@ -86,6 +94,13 @@
     byId('result-title').textContent = outcome === 'escaped' ? 'ESCAPED!' : outcome === 'caught' ? 'CAUGHT' : 'RETIRED';
     byId('result-detail').textContent = outcome === 'escaped' ? '逃走成功' : outcome === 'caught' ? '確保されました' : '逃走を終了しました';
     byId('result-time').textContent = formatTime(elapsed); byId('result-distance').textContent = formatDistance(state.distanceMeters);
+    const difficulty = activeDifficulty();
+    const score = Math.round(state.distanceMeters * 5 + elapsed * 3 + difficulty.initialChaserCount * 500 + (outcome === 'escaped' ? 2000 : 0));
+    byId('result-score').textContent = `${score.toLocaleString()} pt`;
+    const records = getHistory();
+    records.unshift({ outcome: outcome.toUpperCase(), elapsed, distance: Math.round(state.distanceMeters), score, at: Date.now() });
+    localStorage.setItem(historyKey, JSON.stringify(records.slice(0, 30)));
+    renderHistory();
     vibrate(outcome === 'caught' ? [200, 100, 200, 100, 300] : [100, 80, 100]);
   };
   const moveChaser = (seconds) => {
@@ -169,4 +184,5 @@
   byId('history-button').addEventListener('click', () => showScreen('history'));
   document.querySelectorAll('[data-back]').forEach((button) => button.addEventListener('click', () => showScreen(button.dataset.back)));
   if ('serviceWorker' in navigator) addEventListener('load', () => navigator.serviceWorker.register('./service-worker.js'));
+  renderHistory();
 })();
