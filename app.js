@@ -3,7 +3,7 @@
   const safetyDialog = document.querySelector('#safety-dialog');
   const safetyCheck = document.querySelector('#safety-check');
   const safetyConfirm = document.querySelector('#safety-confirm');
-  const state = { map: null, runnerMarker: null, accuracyCircle: null, chaserMarkers: [], watchId: null, runner: null, previousPosition: null, chaserList: [], difficulty: 'normal', custom: null, goalType: 'time', goalValue: 600, phase: 'idle', distanceMeters: 0, startedAt: null, phaseStartedAt: null, lastTickAt: null, caughtSince: null, lastAlert: null, speedTier: 0, timerId: null };
+  const state = { map: null, runnerMarker: null, accuracyCircle: null, watchId: null, runner: null, previousPosition: null, chaserList: [], difficulty: 'normal', custom: null, goalType: 'time', goalValue: 600, phase: 'idle', distanceMeters: 0, startedAt: null, phaseStartedAt: null, lastTickAt: null, caughtSince: null, lastAlert: null, speedTier: 0, addedEvents: [], timerId: null };
 
   const byId = (id) => document.querySelector(`#${id}`);
   const formatDistance = (meters) => meters < 1000 ? `${Math.round(meters)} m` : `${(meters / 1000).toFixed(2)} km`;
@@ -57,8 +57,8 @@
     const icon = L.divIcon({ className: 'chaser-marker-wrap', html: '<span class="chaser-marker"></span>', iconSize: [30, 30], iconAnchor: [15, 15] });
     state.chaserList.forEach((chaser, index) => {
       const point = [chaser.lat, chaser.lng];
-      if (!state.chaserMarkers[index]) state.chaserMarkers[index] = L.marker(point, { icon, zIndexOffset: 900 }).addTo(state.map).bindTooltip('CHASER', { direction: 'top', offset: [0, -13] });
-      else state.chaserMarkers[index].setLatLng(point);
+      if (!chaser.marker) chaser.marker = L.marker(point, { icon, zIndexOffset: 900 }).addTo(state.map).bindTooltip(chaser.activatesAt ? 'CHASER / STANDBY' : 'CHASER', { direction: 'top', offset: [0, -13] });
+      else chaser.marker.setLatLng(point);
     });
   };
   const spawnChaser = () => {
@@ -66,7 +66,7 @@
     const range = distances.initialSpawnMaxMeters - distances.initialSpawnMinMeters;
     const count = activeDifficulty().initialChaserCount;
     const startBearing = Math.random() * 360;
-    state.chaserList = Array.from({ length: count }, (_, index) => destination(state.runner, startBearing + index * (360 / count), distances.initialSpawnMinMeters + Math.random() * range));
+    state.chaserList = Array.from({ length: count }, (_, index) => ({ ...destination(state.runner, startBearing + index * (360 / count), distances.initialSpawnMinMeters + Math.random() * range), activatesAt: 0 }));
     updateChaserMarkers();
   };
   const framePlayers = () => {
@@ -80,8 +80,7 @@
   };
   const resetGame = () => {
     clearInterval(state.timerId);
-    state.phase = 'ready'; state.chaserList = []; state.previousPosition = null; state.distanceMeters = 0; state.startedAt = null; state.phaseStartedAt = null; state.lastTickAt = null; state.caughtSince = null; state.lastAlert = null; state.speedTier = 0;
-    state.chaserMarkers.forEach((marker) => state.map?.removeLayer(marker)); state.chaserMarkers = [];
+    state.phase = 'ready'; state.chaserList.forEach((chaser) => chaser.marker && state.map?.removeLayer(chaser.marker)); state.chaserList = []; state.previousPosition = null; state.distanceMeters = 0; state.startedAt = null; state.phaseStartedAt = null; state.lastTickAt = null; state.caughtSince = null; state.lastAlert = null; state.speedTier = 0; state.addedEvents = [];
     byId('result-panel').classList.add('is-hidden'); byId('ready-panel').classList.remove('is-hidden');
     byId('primary-label').textContent = state.goalType === 'time' ? '残り時間' : '経過時間';
     byId('time-reading').textContent = state.goalType === 'time' ? formatTime(state.goalValue) : '00:00'; byId('distance-reading').textContent = '0 m'; byId('nearest-reading').textContent = '-- m';
@@ -107,8 +106,9 @@
     if (!state.runner || !state.chaserList.length) return;
     const speed = activeDifficulty().speedKmh * (1 + state.speedTier * .1);
     state.chaserList = state.chaserList.map((chaser) => {
+      if (chaser.activatesAt > Date.now()) return chaser;
       const remaining = haversine(chaser, state.runner); const moved = Math.min(remaining, speed * 1000 / 3600 * seconds);
-      return destination(chaser, headingTo(chaser, state.runner), moved);
+      return { ...chaser, ...destination(chaser, headingTo(chaser, state.runner), moved) };
     });
     updateChaserMarkers();
   };
@@ -121,6 +121,15 @@
     const progress = state.goalType === 'time' ? elapsed / state.goalValue : state.distanceMeters / state.goalValue;
     const speedTier = progress >= .9 ? 3 : progress >= .75 ? 2 : progress >= .5 ? 1 : 0;
     if (speedTier > state.speedTier) { state.speedTier = speedTier; vibrate(speedTier === 3 ? [120, 70, 120, 70, 240] : [100, 80, 100]); }
+    [0.25, 0.65, 0.85].forEach((threshold) => {
+      if (progress >= threshold && !state.addedEvents.includes(threshold) && state.chaserList.length < 5) {
+        state.addedEvents.push(threshold);
+        const distance = 300 + Math.random() * 300;
+        state.chaserList.push({ ...destination(state.runner, Math.random() * 360, distance), activatesAt: now + 15000 });
+        updateChaserMarkers();
+        vibrate([100, 70, 100]);
+      }
+    });
     if (state.phase === 'countdown') {
       const left = Math.max(0, game.countdownSeconds - Math.floor((now - state.phaseStartedAt) / 1000));
       setPhase(left ? String(left) : 'RUN!', '安全を確認して逃走してください');
