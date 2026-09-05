@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#151713">
+  <meta name="description" content="100万円もらえる。でも、条件がある。10の究極の二択で、あなたの譲れないものを見つけよう。">
+  <title>100万円ボタン | アプリ100企画 #005</title>
+  <link rel="stylesheet" href="style.css"><script src="app.js" defer></script>
+</head>
+<body>
+  <div class="shell">
+    <header><a class="brand" href="./">100万円ボタン<span>THE MILLION YEN QUESTION</span></a><span class="edition">005 / 100</span></header>
+    <main>
+      <section id="home">
+        <div class="eyebrow">あなたの日常に、値段をつけるなら。</div>
+        <h1>100万円。<br>ただし、<span>条件がある。</span></h1>
+        <p class="intro">好きなもの。自由な時間。ちょっとしたプライド。<br>手放せるものと、手放せないもの。<br>10の二択で、あなたの本音が見えてくる。</p>
+        <div class="hero-button" aria-hidden="true"><span>¥</span><small>WOULD YOU PRESS?</small></div>
+        <button id="start" class="primary">10問、やってみる <span>↗</span></button>
+        <button id="daily" class="secondary">今日の10問で遊ぶ</button>
+        <p class="small center">約1分・登録不要 ／ お金の授受はない空想ゲームです</p>
+        <div id="last" class="last" hidden></div>
+      </section>
+      <section id="game" hidden aria-labelledby="question">
+        <div class="game-top"><span id="mode-label"></span><span id="counter"></span></div>
+        <progress id="progress" max="10" value="0" aria-label="回答済みの問題数"></progress>
+        <div class="offer"><span>このボタンを押すと</span><strong>100<span>万円</span></strong><span>もらえる。</span></div>
+        <div class="condition"><span class="eyebrow">ただし、</span><h2 id="question" tabindex="-1"></h2><p id="detail"></p></div>
+        <div id="choices" class="choices"><button id="yes" class="press">押す<span>100万円をもらう</span></button><button id="no" class="pass">押さない<span>今の日常を守る</span></button></div>
+        <div id="decision" class="decision" hidden aria-live="polite"><strong id="decision-text"></strong><button id="next" class="primary">次の条件へ →</button></div>
+        <div class="game-bottom"><span>仮想の獲得額 <b id="running-total">0万円</b></span><button id="quit" class="text-button">最初に戻る</button></div>
+      </section>
+      <section id="result" hidden aria-labelledby="result-title">
+        <div class="eyebrow">YOUR CHOICES, YOUR VALUES.</div><h1 id="result-title" tabindex="-1">あなたの選択。</h1>
+        <div class="receipt"><div class="receipt-top">100万円ボタン <span id="result-mode"></span></div><p>あなたが受け取った仮想の金額</p><div class="total"><span id="total"></span><small>万円</small></div><div class="receipt-line"><span>押した回数</span><strong id="yes-count"></strong></div><div class="receipt-line"><span>守った日常</span><strong id="no-count"></strong></div><h2 id="title"></h2><p id="description"></p><small>称号は回答数から決まる、遊びの結果です。</small></div>
+        <button id="share" class="primary">結果をシェアする ↗</button><p id="share-status" class="small" role="status"></p><textarea id="share-copy" aria-label="共有する結果テキスト" readonly hidden></textarea>
+        <button id="again" class="secondary">別の10問でもう一度</button>
+        <details><summary>10の選択を振り返る</summary><ol id="review"></ol></details>
+        <button id="home-button" class="text-button">トップに戻る</button>
+      </section>
+    </main>
+    <footer><span>アプリ100企画 / #005</span><span>正解は、あなた次第。</span></footer>
+  </div>
+</body>
+</html>
